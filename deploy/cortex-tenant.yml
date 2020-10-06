@@ -1,0 +1,17 @@
+listen: 0.0.0.0:8080
+target: http://127.0.0.1:9091/receive
+
+log_level: warn
+
+max_tenants: 100
+buffer_size: 10000
+batch_size: 100
+flush_interval: 1s
+timeout: 10s
+
+tenant:
+  label: tenant
+  label_remove: true
+  header: X-Scope-OrgID
+  default: default
+  recycle_age: 10m
