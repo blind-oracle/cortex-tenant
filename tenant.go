@@ -87,6 +87,7 @@ func (t *tenant) flush(batch []interface{}) (err error) {
 	req.Header.SetMethod("POST")
 	req.Header.Set("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set(t.cfg.Tenant.Header, t.name)
 
 	req.SetRequestURI(t.cfg.Target)
@@ -96,11 +97,16 @@ func (t *tenant) flush(batch []interface{}) (err error) {
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
 
-	if resp.Header.StatusCode() != 200 {
-		return fmt.Errorf("HTTP code is not 200: %d (%s)", resp.Header.StatusCode(), string(resp.Body()))
+	sc := resp.Header.StatusCode()
+	if sc < 200 || sc > 299 {
+		return fmt.Errorf("HTTP code is not 2xx: %d (%s)", sc, string(resp.Body()))
 	}
 
 	return
+}
+
+func (t *tenant) stats() batcher.Stats {
+	return t.batcher.Stats()
 }
 
 func (t *tenant) close() error {

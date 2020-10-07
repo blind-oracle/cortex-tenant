@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"net"
 	"sync"
 	"time"
@@ -53,10 +54,19 @@ func newHTTPServer(c config) (s *httpServer, err error) {
 	go s.srv.Serve(l)
 	s.wg.Add(1)
 	go s.recycler()
+
+	s.Warnf("Listening on %s", c.Listen)
+	s.Warnf("Sending to %s", c.Target)
+
 	return
 }
 
 func (s *httpServer) handle(ctx *fh.RequestCtx) {
+	if bytes.Equal(ctx.Path(), []byte("/stats")) {
+		s.stats(ctx)
+		return
+	}
+
 	var (
 		rq      prompb.WriteRequest
 		buf     *buffer
@@ -161,6 +171,18 @@ func (s *httpServer) close() (err error) {
 	s.RUnlock()
 
 	return errs.ErrorOrNil()
+}
+
+func (s *httpServer) stats(ctx *fh.RequestCtx) {
+	ts := map[string]interface{}{}
+	s.RLock()
+	for tn, t := range s.tenants {
+		ts[tn] = t.stats()
+	}
+	s.RUnlock()
+
+	js, _ := json.MarshalIndent(ts, "", "  ")
+	ctx.Write(js)
 }
 
 func (s *httpServer) recycler() {

@@ -4,7 +4,7 @@ DESCRIPTION := Cortex tenant proxy
 URL := https://github.com/blind-oracle/cortex-tenant
 LICENSE := MPL
 
-VERSION := 1.0.0
+VERSION := $(shell cat VERSION)
 RELEASE := 1
 
 GO ?= go
