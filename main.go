@@ -105,7 +105,7 @@ func main() {
 		log.SetLevel(lvl)
 	}
 
-	srv, err := newHTTPServer(cfg)
+	proc, err := newProcessor(cfg)
 	if err != nil {
 		log.Fatalf("Unable to start: %s", err)
 	}
@@ -119,8 +119,8 @@ func main() {
 		switch sig {
 		case os.Interrupt, syscall.SIGTERM:
 			log.Warn("Got SIGTERM, shutting down")
-			if err = srv.close(); err != nil {
-				log.Errorf("Errors during shutdown: %s", err)
+			if err = proc.close(); err != nil {
+				log.Errorf("Error during shutdown: %s", err)
 			}
 
 			log.Warnf("Finished")
