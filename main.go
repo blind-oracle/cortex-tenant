@@ -22,20 +22,13 @@ type config struct {
 	Target string
 
 	LogLevel string `yaml:"log_level"`
-
-	MaxTenants int `yaml:"max_tenants"`
-	BufferSize int `yaml:"buffer_size"`
-	BatchSize  int `yaml:"batch_size"`
-
-	FlushInterval time.Duration `yaml:"flush_interval"`
-	Timeout       time.Duration
+	Timeout  time.Duration
 
 	Tenant struct {
 		Label       string
 		LabelRemove bool `yaml:"label_remove"`
 		Header      string
 		Default     string
-		RecycleAge  time.Duration `yaml:"recycle_age"`
 	}
 }
 
@@ -93,10 +86,6 @@ func main() {
 		cfg.Tenant.Label = "__tenant__"
 	}
 
-	if cfg.Tenant.RecycleAge == 0 {
-		cfg.Tenant.RecycleAge = 10 * time.Minute
-	}
-
 	if cfg.LogLevel != "" {
 		lvl, err := log.ParseLevel(cfg.LogLevel)
 		if err != nil {
@@ -112,19 +101,14 @@ func main() {
 
 	log.Warnf("Started v%s", version)
 
-	sigchannel := make(chan os.Signal, 1)
-	signal.Notify(sigchannel, syscall.SIGTERM, os.Interrupt)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, os.Interrupt)
+	<-ch
 
-	for sig := range sigchannel {
-		switch sig {
-		case os.Interrupt, syscall.SIGTERM:
-			log.Warn("Got SIGTERM, shutting down")
-			if err = proc.close(); err != nil {
-				log.Errorf("Error during shutdown: %s", err)
-			}
-
-			log.Warnf("Finished")
-			return
-		}
+	log.Warn("Shutting down, draining requests")
+	if err = proc.close(); err != nil {
+		log.Errorf("Error during shutdown: %s", err)
 	}
+
+	log.Warnf("Finished")
 }

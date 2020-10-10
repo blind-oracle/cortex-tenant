@@ -71,7 +71,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	var (
-		rq      prompb.WriteRequest
+		wr      prompb.WriteRequest
 		buf     *buffer
 		decoded []byte
 		err     error
@@ -92,59 +92,83 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 
 	buf.grow()
 	if decoded, err = snappy.Decode(buf.b, ctx.Request.Body()); err != nil {
-		ctx.Error(err.Error(), fh.StatusBadRequest)
+		msg := fmt.Sprintf("Unable to unpack Snappy: %s", err)
+		ctx.Error(msg, fh.StatusBadRequest)
+		p.Warnf(msg)
 		return
 	}
 
-	if err = proto.Unmarshal(decoded, &rq); err != nil {
-		ctx.Error(err.Error(), fh.StatusBadRequest)
+	if err = proto.Unmarshal(decoded, &wr); err != nil {
+		msg := fmt.Sprintf("Unable to unmarshal protobuf: %s", err)
+		ctx.Error(msg, fh.StatusBadRequest)
+		p.Warnf(msg)
 		return
 	}
+
+	ip := ctx.RemoteAddr()
 
 	// Create per-tenant write requests
 	m := map[string]*prompb.WriteRequest{}
-	for _, ts := range rq.Timeseries {
+	samples := 0
+	for _, ts := range wr.Timeseries {
+		samples += len(ts.Samples)
 		tenant := p.processTimeseries(ts)
 
 		var (
-			wr *prompb.WriteRequest
-			ok bool
+			wrOut *prompb.WriteRequest
+			ok    bool
 		)
 
-		if wr, ok = m[tenant]; !ok {
-			wr = &prompb.WriteRequest{}
-			m[tenant] = wr
+		if wrOut, ok = m[tenant]; !ok {
+			wrOut = &prompb.WriteRequest{}
+			m[tenant] = wrOut
 		}
 
-		wr.Timeseries = append(wr.Timeseries, ts)
+		wrOut.Timeseries = append(wr.Timeseries, ts)
 	}
 
-	resultCh := make(chan result, len(m))
+	ok := 0
+	var res result
+	for _, r := range p.dispatch(m) {
+		if r.err != nil {
+			err = r.err
+			p.Errorf("src=%s %s", ctx.RemoteAddr(), err)
+		} else if r.code < 200 || r.code > 299 {
+			if res.code == 0 {
+				res = r
+			}
 
-	for tenant, wr := range m {
-		go func(tenant string, wr *prompb.WriteRequest) {
+			p.Errorf("src=%s http code not 2xx (%d): %s", ip, r.code, string(r.body))
+		} else {
+			ok++
+		}
+	}
+
+	if err != nil {
+		ctx.Error(err.Error(), fh.StatusInternalServerError)
+	} else if res.code != 0 {
+		ctx.SetStatusCode(res.code)
+		ctx.SetBody(res.body)
+	}
+
+	p.Debugf("src=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, len(wr.Timeseries), samples, ok, len(m))
+	return
+}
+
+func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
+	resultCh := make(chan result, len(m))
+	res = make([]result, len(m))
+
+	for tenant, wrOut := range m {
+		go func(tenant string, wrOut *prompb.WriteRequest) {
 			var r result
-			r.code, r.body, r.err = p.send(tenant, wr)
+			r.code, r.body, r.err = p.send(tenant, wrOut)
 			resultCh <- r
-		}(tenant, wr)
+		}(tenant, wrOut)
 	}
 
 	for i := 0; i < len(m); i++ {
-		r := <-resultCh
-
-		if r.err != nil {
-			msg := fmt.Sprintf("HTTP request failed: %s", r.err)
-			ctx.Error(msg, fh.StatusInternalServerError)
-			p.Errorf(msg)
-			return
-		}
-
-		if r.code < 200 || r.code > 299 {
-			ctx.SetBody(r.body)
-			ctx.SetStatusCode(r.code)
-			p.Errorf("HTTP code is not 2xx (%d): %s", r.code, string(r.body))
-			return
-		}
+		res[i] = <-resultCh
 	}
 
 	return
