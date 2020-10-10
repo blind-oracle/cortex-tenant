@@ -15,9 +15,10 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/sirupsen/logrus v1.7.0
 	github.com/valyala/fasthttp v1.16.0
-	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0 // indirect
-	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf // indirect
-	google.golang.org/genproto v0.0.0-20201006033701-bcad7cf615f2 // indirect
+	golang.org/x/net v0.0.0-20201009032441-dbdefad45b89 // indirect
+	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634 // indirect
+	google.golang.org/genproto v0.0.0-20201009135657-4d944d34d83c // indirect
+	google.golang.org/grpc v1.33.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
