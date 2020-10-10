@@ -13,8 +13,6 @@ import (
 	fh "github.com/valyala/fasthttp"
 )
 
-type tsSlice []*prompb.TimeSeries
-
 type result struct {
 	code int
 	body []byte
@@ -68,10 +66,9 @@ func newProcessor(c config) (p *processor, err error) {
 }
 
 func (p *processor) handle(ctx *fh.RequestCtx) {
-	// if bytes.Equal(ctx.Path(), []byte("/stats")) {
-	// 	s.stats(ctx)
-	// 	return
-	// }
+	if bytes.Equal(ctx.Path(), []byte("/alive")) {
+		return
+	}
 
 	var (
 		rq      prompb.WriteRequest
@@ -81,12 +78,12 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	)
 
 	if !bytes.Equal(ctx.Request.Header.Method(), []byte("POST")) {
-		ctx.Error(err.Error(), fh.StatusBadRequest)
+		ctx.Error("Expecting POST", fh.StatusBadRequest)
 		return
 	}
 
 	if !bytes.Equal(ctx.Path(), []byte("/push")) {
-		ctx.Error(err.Error(), fh.StatusBadRequest)
+		ctx.Error("Unknown URL", fh.StatusNotFound)
 		return
 	}
 
@@ -104,28 +101,32 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
-	m := map[string]*tsSlice{}
-	var ok bool
+	// Create per-tenant write requests
+	m := map[string]*prompb.WriteRequest{}
 	for _, ts := range rq.Timeseries {
 		tenant := p.processTimeseries(ts)
 
-		var tss *tsSlice
-		if tss, ok = m[tenant]; !ok {
-			tss = &tsSlice{}
-			m[tenant] = tss
+		var (
+			wr *prompb.WriteRequest
+			ok bool
+		)
+
+		if wr, ok = m[tenant]; !ok {
+			wr = &prompb.WriteRequest{}
+			m[tenant] = wr
 		}
 
-		*tss = append(*tss, ts)
+		wr.Timeseries = append(wr.Timeseries, ts)
 	}
 
 	resultCh := make(chan result, len(m))
 
-	for tenant, tss := range m {
-		go func(name string, series tsSlice) {
+	for tenant, wr := range m {
+		go func(tenant string, wr *prompb.WriteRequest) {
 			var r result
-			r.code, r.body, r.err = p.send(name, series)
+			r.code, r.body, r.err = p.send(tenant, wr)
 			resultCh <- r
-		}(tenant, *tss)
+		}(tenant, wr)
 	}
 
 	for i := 0; i < len(m); i++ {
@@ -169,7 +170,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
 	return
 }
 
-func (p *processor) send(tenant string, ts tsSlice) (code int, body []byte, err error) {
+func (p *processor) send(tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
 	buf1 := bufferPool.Get().(*buffer)
@@ -181,10 +182,6 @@ func (p *processor) send(tenant string, ts tsSlice) (code int, body []byte, err 
 		bufferPool.Put(buf1)
 		bufferPool.Put(buf2)
 	}()
-
-	wr := &prompb.WriteRequest{
-		Timeseries: ts,
-	}
 
 	var l int
 	buf1.grow()
