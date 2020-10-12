@@ -157,8 +157,6 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 
 func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
 	resultCh := make(chan result, len(m))
-	res = make([]result, len(m))
-
 	for tenant, wrOut := range m {
 		go func(tenant string, wrOut *prompb.WriteRequest) {
 			var r result
@@ -167,6 +165,7 @@ func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
 		}(tenant, wrOut)
 	}
 
+	res = make([]result, len(m))
 	for i := 0; i < len(m); i++ {
 		res[i] = <-resultCh
 	}

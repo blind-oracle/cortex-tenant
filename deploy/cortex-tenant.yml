@@ -4,7 +4,7 @@ log_level: warn
 timeout: 10s
 
 tenant:
-  label: sc_tenant
+  label: __tenant__
   label_remove: true
   header: X-Scope-OrgID
   default: default
