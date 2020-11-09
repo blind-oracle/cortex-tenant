@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/blind-oracle/go-common/logger"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/google/uuid"
 	"github.com/prometheus/prometheus/prompb"
 	fh "github.com/valyala/fasthttp"
 )
@@ -26,13 +28,15 @@ type processor struct {
 	srv *fh.Server
 	cli *fh.Client
 
+	shuttingDown uint32
+
 	logger.Logger
 }
 
 func newProcessor(c config) (p *processor, err error) {
 	p = &processor{
 		cfg:    c,
-		Logger: logger.NewSimpleLogger("http"),
+		Logger: logger.NewSimpleLogger("proc"),
 	}
 
 	p.srv = &fh.Server{
@@ -68,6 +72,10 @@ func newProcessor(c config) (p *processor, err error) {
 
 func (p *processor) handle(ctx *fh.RequestCtx) {
 	if bytes.Equal(ctx.Path(), []byte("/alive")) {
+		if atomic.LoadUint32(&p.shuttingDown) == 1 {
+			ctx.SetStatusCode(fh.StatusServiceUnavailable)
+		}
+
 		return
 	}
 
@@ -103,6 +111,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	ip := ctx.RemoteAddr()
+	reqID, _ := uuid.NewRandom()
 
 	// Create per-tenant write requests
 	m := map[string]*prompb.WriteRequest{}
@@ -119,12 +128,13 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		}
 
 		wrReqOut.Timeseries = append(wrReqOut.Timeseries, ts)
-		p.Debugf("src=%s tenant=%s labels=%+v", ip, tenant, ts.Labels)
+		p.Debugf("src=%s req_id=%s tenant=%s labels=%+v", ip, reqID, tenant, ts.Labels)
 	}
 
 	ok := 0
 	var res result
-	for _, r := range p.dispatch(m) {
+
+	for _, r := range p.dispatch(ip, reqID, m) {
 		if r.err != nil {
 			err = r.err
 			p.Errorf("src=%s %s", ip, err)
@@ -133,7 +143,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 				res = r
 			}
 
-			p.Errorf("src=%s http code not 2xx (%d): %s", ip, r.code, string(r.body))
+			p.Errorf("src=%s req_id=%s http code not 2xx (%d): %s", ip, reqID, r.code, string(r.body))
 		} else {
 			ok++
 		}
@@ -146,18 +156,24 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		ctx.SetBody(res.body)
 	}
 
-	p.Debugf("src=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, len(wrReqIn.Timeseries), samples, ok, len(m))
+	p.Debugf("src=%s req_id=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, reqID, len(wrReqIn.Timeseries), samples, ok, len(m))
 	return
 }
 
-func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
-	var mtx sync.Mutex
-	res = make([]result, len(m))
+func (p *processor) dispatch(ip net.Addr, reqID uuid.UUID, m map[string]*prompb.WriteRequest) (res []result) {
+	var (
+		mtx sync.Mutex
+		wg  sync.WaitGroup
+	)
 
 	for tenant, wrReq := range m {
+		wg.Add(1)
+
 		go func(tenant string, wrReq *prompb.WriteRequest) {
+			defer wg.Done()
+
 			var r result
-			r.code, r.body, r.err = p.send(tenant, wrReq)
+			r.code, r.body, r.err = p.send(ip, reqID, tenant, wrReq)
 
 			mtx.Lock()
 			res = append(res, r)
@@ -165,6 +181,7 @@ func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
 		}(tenant, wrReq)
 	}
 
+	wg.Wait()
 	return
 }
 
@@ -190,7 +207,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
 	return
 }
 
-func (p *processor) send(tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
+func (p *processor) send(ip net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
 	buf1 := bufferPool.Get().(*buffer)
@@ -220,6 +237,8 @@ func (p *processor) send(tenant string, wr *prompb.WriteRequest) (code int, body
 	req.Header.Set("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	req.Header.Set("X-Cortex-Tenant-Src", ip.String())
+	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
 	req.Header.Set(p.cfg.Tenant.Header, tenant)
 
 	req.SetRequestURI(p.cfg.Target)
@@ -235,5 +254,10 @@ func (p *processor) send(tenant string, wr *prompb.WriteRequest) (code int, body
 }
 
 func (p *processor) close() (err error) {
+	// Signal that we're shutting down
+	atomic.StoreUint32(&p.shuttingDown, 1)
+	// Let healthcheck to see that we're offline
+	time.Sleep(10 * time.Second)
+	// Shutdown
 	return p.srv.Shutdown()
 }

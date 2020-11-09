@@ -7,6 +7,7 @@ require (
 	github.com/blind-oracle/go-common v1.0.7
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/snappy v0.0.2
+	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway v1.15.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
