@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/blind-oracle/go-common/logger"
@@ -70,12 +71,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
-	var (
-		wr      prompb.WriteRequest
-		buf     *buffer
-		decoded []byte
-		err     error
-	)
+	var wrReqIn prompb.WriteRequest
 
 	if !bytes.Equal(ctx.Request.Header.Method(), []byte("POST")) {
 		ctx.Error("Expecting POST", fh.StatusBadRequest)
@@ -87,18 +83,19 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
-	buf = bufferPool.Get().(*buffer)
+	buf := bufferPool.Get().(*buffer)
+	buf.grow()
 	defer bufferPool.Put(buf)
 
-	buf.grow()
-	if decoded, err = snappy.Decode(buf.b, ctx.Request.Body()); err != nil {
+	decoded, err := snappy.Decode(buf.b, ctx.Request.Body())
+	if err != nil {
 		msg := fmt.Sprintf("Unable to unpack Snappy: %s", err)
 		ctx.Error(msg, fh.StatusBadRequest)
 		p.Warnf(msg)
 		return
 	}
 
-	if err = proto.Unmarshal(decoded, &wr); err != nil {
+	if err = proto.Unmarshal(decoded, &wrReqIn); err != nil {
 		msg := fmt.Sprintf("Unable to unmarshal protobuf: %s", err)
 		ctx.Error(msg, fh.StatusBadRequest)
 		p.Warnf(msg)
@@ -110,21 +107,19 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	// Create per-tenant write requests
 	m := map[string]*prompb.WriteRequest{}
 	samples := 0
-	for _, ts := range wr.Timeseries {
+
+	for _, ts := range wrReqIn.Timeseries {
 		samples += len(ts.Samples)
 		tenant := p.processTimeseries(ts)
 
-		var (
-			wrOut *prompb.WriteRequest
-			ok    bool
-		)
-
-		if wrOut, ok = m[tenant]; !ok {
-			wrOut = &prompb.WriteRequest{}
-			m[tenant] = wrOut
+		wrReqOut, ok := m[tenant]
+		if !ok {
+			wrReqOut = &prompb.WriteRequest{}
+			m[tenant] = wrReqOut
 		}
 
-		wrOut.Timeseries = append(wr.Timeseries, ts)
+		wrReqOut.Timeseries = append(wrReqOut.Timeseries, ts)
+		p.Debugf("src=%s tenant=%s labels=%+v", ip, tenant, ts.Labels)
 	}
 
 	ok := 0
@@ -132,7 +127,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	for _, r := range p.dispatch(m) {
 		if r.err != nil {
 			err = r.err
-			p.Errorf("src=%s %s", ctx.RemoteAddr(), err)
+			p.Errorf("src=%s %s", ip, err)
 		} else if r.code < 200 || r.code > 299 {
 			if res.code == 0 {
 				res = r
@@ -151,43 +146,45 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		ctx.SetBody(res.body)
 	}
 
-	p.Debugf("src=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, len(wr.Timeseries), samples, ok, len(m))
+	p.Debugf("src=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, len(wrReqIn.Timeseries), samples, ok, len(m))
 	return
 }
 
 func (p *processor) dispatch(m map[string]*prompb.WriteRequest) (res []result) {
-	resultCh := make(chan result, len(m))
-	for tenant, wrOut := range m {
-		go func(tenant string, wrOut *prompb.WriteRequest) {
-			var r result
-			r.code, r.body, r.err = p.send(tenant, wrOut)
-			resultCh <- r
-		}(tenant, wrOut)
-	}
-
+	var mtx sync.Mutex
 	res = make([]result, len(m))
-	for i := 0; i < len(m); i++ {
-		res[i] = <-resultCh
+
+	for tenant, wrReq := range m {
+		go func(tenant string, wrReq *prompb.WriteRequest) {
+			var r result
+			r.code, r.body, r.err = p.send(tenant, wrReq)
+
+			mtx.Lock()
+			res = append(res, r)
+			mtx.Unlock()
+		}(tenant, wrReq)
 	}
 
 	return
 }
 
 func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
-	j := 0
+	labelIdx := 0
 	for i, l := range ts.Labels {
 		if l.Name == p.cfg.Tenant.Label {
-			tenant, j = l.Value, i
+			tenant, labelIdx = l.Value, i
 			break
 		}
 	}
 
 	if tenant == "" {
-		tenant = p.cfg.Tenant.Default
-	} else if p.cfg.Tenant.LabelRemove {
-		cnt := len(ts.Labels)
-		ts.Labels[j] = ts.Labels[cnt-1]
-		ts.Labels = ts.Labels[:cnt-1]
+		return p.cfg.Tenant.Default
+	}
+
+	if p.cfg.Tenant.LabelRemove {
+		l := len(ts.Labels)
+		ts.Labels[labelIdx] = ts.Labels[l-1]
+		ts.Labels = ts.Labels[:l-1]
 	}
 
 	return
@@ -206,12 +203,14 @@ func (p *processor) send(tenant string, wr *prompb.WriteRequest) (code int, body
 		bufferPool.Put(buf2)
 	}()
 
+	// Marshal to Protobuf
 	var l int
 	buf1.grow()
 	if l, err = wr.MarshalTo(buf1.b); err != nil {
 		return
 	}
 
+	// Compress with Snappy
 	buf2.grow()
 	if buf2.b = snappy.Encode(buf2.b, buf1.b[:l]); err != nil {
 		return
