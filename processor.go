@@ -128,7 +128,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		}
 
 		wrReqOut.Timeseries = append(wrReqOut.Timeseries, ts)
-		p.Debugf("src=%s req_id=%s tenant=%s labels=%+v", ip, reqID, tenant, ts.Labels)
+		//p.Debugf("src=%s req_id=%s tenant=%s labels=%+v", ip, reqID, tenant, ts.Labels)
 	}
 
 	ok := 0
@@ -156,29 +156,27 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		ctx.SetBody(res.body)
 	}
 
-	p.Debugf("src=%s req_id=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, reqID, len(wrReqIn.Timeseries), samples, ok, len(m))
+	//p.Debugf("src=%s req_id=%s timeseries=%d samples=%d requests_ok=%d/%d", ip, reqID, len(wrReqIn.Timeseries), samples, ok, len(m))
 	return
 }
 
 func (p *processor) dispatch(ip net.Addr, reqID uuid.UUID, m map[string]*prompb.WriteRequest) (res []result) {
-	var (
-		mtx sync.Mutex
-		wg  sync.WaitGroup
-	)
+	var wg sync.WaitGroup
+	res = make([]result, len(m))
 
+	i := 0
 	for tenant, wrReq := range m {
 		wg.Add(1)
 
-		go func(tenant string, wrReq *prompb.WriteRequest) {
+		go func(idx int, tenant string, wrReq *prompb.WriteRequest) {
 			defer wg.Done()
 
 			var r result
 			r.code, r.body, r.err = p.send(ip, reqID, tenant, wrReq)
+			res[idx] = r
+		}(i, tenant, wrReq)
 
-			mtx.Lock()
-			res = append(res, r)
-			mtx.Unlock()
-		}(tenant, wrReq)
+		i++
 	}
 
 	wg.Wait()
@@ -210,8 +208,11 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
 func (p *processor) send(ip net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
+
 	buf1 := bufferPool.Get().(*buffer)
 	buf2 := bufferPool.Get().(*buffer)
+	buf1.grow()
+	buf2.grow()
 
 	defer func() {
 		fh.ReleaseRequest(req)
@@ -222,13 +223,11 @@ func (p *processor) send(ip net.Addr, reqID uuid.UUID, tenant string, wr *prompb
 
 	// Marshal to Protobuf
 	var l int
-	buf1.grow()
 	if l, err = wr.MarshalTo(buf1.b); err != nil {
 		return
 	}
 
 	// Compress with Snappy
-	buf2.grow()
 	if buf2.b = snappy.Encode(buf2.b, buf1.b[:l]); err != nil {
 		return
 	}
@@ -256,8 +255,8 @@ func (p *processor) send(ip net.Addr, reqID uuid.UUID, tenant string, wr *prompb
 func (p *processor) close() (err error) {
 	// Signal that we're shutting down
 	atomic.StoreUint32(&p.shuttingDown, 1)
-	// Let healthcheck to see that we're offline
-	time.Sleep(10 * time.Second)
+	// Let healthcheck detect that we're offline
+	time.Sleep(p.cfg.TimeoutShutdown)
 	// Shutdown
 	return p.srv.Shutdown()
 }

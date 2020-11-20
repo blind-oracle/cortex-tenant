@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -18,11 +21,14 @@ const (
 )
 
 type config struct {
-	Listen string
+	Listen      string
+	ListenPprof string `yaml:"listen_pprof"`
+
 	Target string
 
-	LogLevel string `yaml:"log_level"`
-	Timeout  time.Duration
+	LogLevel        string `yaml:"log_level"`
+	Timeout         time.Duration
+	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
 
 	Tenant struct {
 		Label       string
@@ -70,8 +76,20 @@ func main() {
 		log.Fatalf("Unable to parse config: %s", err)
 	}
 
+	if cfg.ListenPprof != "" {
+		go func() {
+			if err := http.ListenAndServe(cfg.ListenPprof, nil); err != nil {
+				log.Fatalf("Unable to listen on %s: %s", cfg.ListenPprof, err)
+			}
+		}()
+	}
+
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10 * time.Second
+	}
+
+	if cfg.TimeoutShutdown == 0 {
+		cfg.TimeoutShutdown = 10 * time.Second
 	}
 
 	if cfg.Tenant.Default == "" {
@@ -91,6 +109,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Unable to parse log level: %s", err)
 		}
+
 		log.SetLevel(lvl)
 	}
 
