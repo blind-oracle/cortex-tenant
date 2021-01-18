@@ -1,5 +1,7 @@
 # cortex-tenant
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/blind-oracle/cortex-tenant)](https://goreportcard.com/report/github.com/blind-oracle/cortex-tenant)
+
 Prometheus remote write proxy which marks timeseries with a Cortex tenant ID based on labels.
 
 ## Overview
