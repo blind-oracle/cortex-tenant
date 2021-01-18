@@ -201,7 +201,7 @@ func Test_handle(t *testing.T) {
 }
 
 func Test_processTimeseries(t *testing.T) {
-	cfg, err := configLoad("config.yml")
+	cfg, err := configParse([]byte(testConfig))
 	assert.Nil(t, err)
 	cfg.Tenant.LabelRemove = true
 
