@@ -14,6 +14,23 @@ import (
 	fhu "github.com/valyala/fasthttp/fasthttputil"
 )
 
+const (
+	testConfig = `listen: 0.0.0.0:8080
+listen_pprof: 0.0.0.0:7008
+
+target: http://127.0.0.1:9091/receive
+log_level: debug
+timeout: 10s
+timeout_shutdown: 0s
+
+tenant:
+  label: __tenant__
+  label_remove: false
+  header: X-Scope-OrgID
+  default: default
+`
+)
+
 var (
 	smpl1 = prompb.Sample{
 		Value:     123,
@@ -94,7 +111,7 @@ var (
 )
 
 func createProcessor() (*processor, error) {
-	cfg, err := configLoad("config.yml")
+	cfg, err := configParse([]byte(testConfig))
 	if err != nil {
 		return nil, err
 	}

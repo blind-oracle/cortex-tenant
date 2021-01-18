@@ -30,14 +30,9 @@ type config struct {
 	pipeOut *fhu.InmemoryListener
 }
 
-func configLoad(file string) (*config, error) {
-	y, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to read config")
-	}
-
+func configParse(b []byte) (*config, error) {
 	cfg := &config{}
-	if err = yaml.UnmarshalStrict(y, cfg); err != nil {
+	if err := yaml.UnmarshalStrict(b, cfg); err != nil {
 		return nil, errors.Wrap(err, "Unable to parse config")
 	}
 
@@ -58,4 +53,13 @@ func configLoad(file string) (*config, error) {
 	}
 
 	return cfg, nil
+}
+
+func configLoad(file string) (*config, error) {
+	y, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to read config")
+	}
+
+	return configParse(y)
 }
