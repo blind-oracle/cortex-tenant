@@ -134,7 +134,7 @@ func sinkHandler(ctx *fh.RequestCtx) {
 }
 
 func Test_handle(t *testing.T) {
-	cfg, err := configLoad("config.yml")
+	cfg, err := configParse([]byte(testConfig))
 	assert.Nil(t, err)
 
 	cfg.pipeIn = fhu.NewInmemoryListener()
