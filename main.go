@@ -2,47 +2,26 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"net/http"
 	_ "net/http/pprof"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 const (
-	bufSize = 1024 * 1024
+	bufSize = 1024 * 128
 )
-
-type config struct {
-	Listen      string
-	ListenPprof string `yaml:"listen_pprof"`
-
-	Target string
-
-	LogLevel        string `yaml:"log_level"`
-	Timeout         time.Duration
-	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
-
-	Tenant struct {
-		Label       string
-		LabelRemove bool `yaml:"label_remove"`
-		Header      string
-		Default     string
-	}
-}
 
 type buffer struct {
 	b []byte
 }
 
-func (b *buffer) grow() {
+func (b *buffer) reset() {
 	b.b = b.b[:bufSize]
 }
 
@@ -66,14 +45,9 @@ func main() {
 		log.Fatalf("Config file required")
 	}
 
-	y, err := ioutil.ReadFile(*cfgFile)
+	cfg, err := configLoad(*cfgFile)
 	if err != nil {
-		log.Fatalf("Unable to read config: %s", err)
-	}
-
-	var cfg config
-	if err = yaml.UnmarshalStrict(y, &cfg); err != nil {
-		log.Fatalf("Unable to parse config: %s", err)
+		log.Fatal(err)
 	}
 
 	if cfg.ListenPprof != "" {
@@ -82,26 +56,6 @@ func main() {
 				log.Fatalf("Unable to listen on %s: %s", cfg.ListenPprof, err)
 			}
 		}()
-	}
-
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 10 * time.Second
-	}
-
-	if cfg.TimeoutShutdown == 0 {
-		cfg.TimeoutShutdown = 10 * time.Second
-	}
-
-	if cfg.Tenant.Default == "" {
-		cfg.Tenant.Default = "default"
-	}
-
-	if cfg.Tenant.Header == "" {
-		cfg.Tenant.Header = "X-Scope-OrgID"
-	}
-
-	if cfg.Tenant.Label == "" {
-		cfg.Tenant.Label = "__tenant__"
 	}
 
 	if cfg.LogLevel != "" {
@@ -113,11 +67,13 @@ func main() {
 		log.SetLevel(lvl)
 	}
 
-	proc, err := newProcessor(cfg)
-	if err != nil {
+	proc := newProcessor(*cfg)
+
+	if err = proc.run(); err != nil {
 		log.Fatalf("Unable to start: %s", err)
 	}
 
+	log.Warnf("Listening on %s, sending to %s", cfg.Listen, cfg.Target)
 	log.Warnf("Started v%s", version)
 
 	ch := make(chan os.Signal, 1)

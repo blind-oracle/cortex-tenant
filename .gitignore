@@ -3,3 +3,4 @@ sink
 config.yml
 .out
 *.rpm
+*.deb

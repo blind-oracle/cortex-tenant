@@ -1,0 +1,61 @@
+package main
+
+import (
+	"io/ioutil"
+	"time"
+
+	"github.com/pkg/errors"
+	fhu "github.com/valyala/fasthttp/fasthttputil"
+	"gopkg.in/yaml.v2"
+)
+
+type config struct {
+	Listen      string
+	ListenPprof string `yaml:"listen_pprof"`
+
+	Target string
+
+	LogLevel        string `yaml:"log_level"`
+	Timeout         time.Duration
+	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
+
+	Tenant struct {
+		Label       string
+		LabelRemove bool `yaml:"label_remove"`
+		Header      string
+		Default     string
+	}
+
+	pipeIn  *fhu.InmemoryListener
+	pipeOut *fhu.InmemoryListener
+}
+
+func configLoad(file string) (*config, error) {
+	y, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to read config")
+	}
+
+	cfg := &config{}
+	if err = yaml.UnmarshalStrict(y, cfg); err != nil {
+		return nil, errors.Wrap(err, "Unable to parse config")
+	}
+
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 10 * time.Second
+	}
+
+	if cfg.Tenant.Default == "" {
+		cfg.Tenant.Default = "default"
+	}
+
+	if cfg.Tenant.Header == "" {
+		cfg.Tenant.Header = "X-Scope-OrgID"
+	}
+
+	if cfg.Tenant.Label == "" {
+		cfg.Tenant.Label = "__tenant__"
+	}
+
+	return cfg, nil
+}
