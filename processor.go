@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -58,6 +59,7 @@ func newProcessor(c config) *processor {
 		MaxConnsPerHost:    64,
 	}
 
+	// For testing
 	if c.pipeOut != nil {
 		p.cli.Dial = func(a string) (net.Conn, error) {
 			return c.pipeOut.Dial()
@@ -70,6 +72,7 @@ func newProcessor(c config) *processor {
 func (p *processor) run() (err error) {
 	var l net.Listener
 
+	// For testing
 	if p.cfg.pipeIn == nil {
 		if l, err = net.Listen("tcp", p.cfg.Listen); err != nil {
 			return
@@ -113,7 +116,11 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	ok := 0
 	var res result
 
-	m := p.createWriteRequests(wrReqIn)
+	m, err := p.createWriteRequests(wrReqIn)
+	if err != nil {
+		ctx.Error(err.Error(), fh.StatusBadRequest)
+		return
+	}
 
 	for _, r := range p.dispatch(clientIP, reqID, m) {
 		if r.err != nil {
@@ -140,12 +147,15 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	return
 }
 
-func (p *processor) createWriteRequests(in *prompb.WriteRequest) map[string]*prompb.WriteRequest {
+func (p *processor) createWriteRequests(in *prompb.WriteRequest) (map[string]*prompb.WriteRequest, error) {
 	// Create per-tenant write requests
 	m := map[string]*prompb.WriteRequest{}
 
 	for _, ts := range in.Timeseries {
-		tenant := p.processTimeseries(ts)
+		tenant, err := p.processTimeseries(ts)
+		if err != nil {
+			return nil, err
+		}
 
 		wrReqOut, ok := m[tenant]
 		if !ok {
@@ -156,7 +166,7 @@ func (p *processor) createWriteRequests(in *prompb.WriteRequest) map[string]*pro
 		wrReqOut.Timeseries = append(wrReqOut.Timeseries, ts)
 	}
 
-	return m
+	return m, nil
 }
 
 func (p *processor) unmarshal(b []byte) (*prompb.WriteRequest, error) {
@@ -215,7 +225,7 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*p
 	return
 }
 
-func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
+func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err error) {
 	idx := 0
 	for i, l := range ts.Labels {
 		if l.Name == p.cfg.Tenant.Label {
@@ -225,7 +235,11 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string) {
 	}
 
 	if tenant == "" {
-		return p.cfg.Tenant.Default
+		if p.cfg.Tenant.Default == "" {
+			return "", fmt.Errorf("Label '%s' not found", p.cfg.Tenant.Label)
+		}
+
+		return p.cfg.Tenant.Default, nil
 	}
 
 	if p.cfg.Tenant.LabelRemove {

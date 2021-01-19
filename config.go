@@ -40,10 +40,6 @@ func configParse(b []byte) (*config, error) {
 		cfg.Timeout = 10 * time.Second
 	}
 
-	if cfg.Tenant.Default == "" {
-		cfg.Tenant.Default = "default"
-	}
-
 	if cfg.Tenant.Header == "" {
 		cfg.Tenant.Header = "X-Scope-OrgID"
 	}

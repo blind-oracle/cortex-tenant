@@ -208,11 +208,20 @@ func Test_processTimeseries(t *testing.T) {
 	p := newProcessor(*cfg)
 	assert.Nil(t, err)
 
-	ten := p.processTimeseries(testTS4)
+	ten, err := p.processTimeseries(testTS4)
+	assert.Nil(t, err)
 	assert.Equal(t, "foobaz", ten)
 
-	ten = p.processTimeseries(testTS3)
+	ten, err = p.processTimeseries(testTS3)
+	assert.Nil(t, err)
 	assert.Equal(t, "default", ten)
+
+	cfg.Tenant.Default = ""
+	p = newProcessor(*cfg)
+	assert.Nil(t, err)
+
+	ten, err = p.processTimeseries(testTS3)
+	assert.NotNil(t, err)
 }
 
 func Test_marshal(t *testing.T) {
@@ -242,7 +251,8 @@ func Test_createWriteRequests(t *testing.T) {
 	p, err := createProcessor()
 	assert.Nil(t, err)
 
-	m := p.createWriteRequests(testWRQ)
+	m, err := p.createWriteRequests(testWRQ)
+	assert.Nil(t, err)
 
 	mExp := map[string]*prompb.WriteRequest{
 		"foobar": testWRQ1,

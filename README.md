@@ -12,14 +12,15 @@ Cortex tenants (separate namespaces where metrics are stored to and queried from
 
 This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
-This proxy solves this problem. The logic is:
+This proxy solves the problem:
 
-- Receives Prometheus remote write
-- Searches all timeseries for a specific label and gets a tenant ID from its value
-  If the label wasn't not found then it uses configured default tenant name (`default`)
-- Optionally removes this label
+- Receive Prometheus remote write
+- Search each timeseries for a specific label name and extract a tenant ID from its value.
+  If the label wasn't not found then it can fall back to a configurable default ID.
+  If none is configured then the write request will be rejected.
+- Optionally removes this label the timeseries
 - Groups timeseries by tenant
-- Issues a number of per-tenant HTTP requests to Cortex adding the tenant HTTP header (`X-Scope-OrgID` by default)
+- Issues a number of parallel per-tenant HTTP requests to Cortex adding the tenant HTTP header (`X-Scope-OrgID` by default)
 
 ## Usage
 
@@ -27,20 +28,20 @@ This proxy solves this problem. The logic is:
 
 ### Configuration
 
-The application expects the config at `/etc/cortex-tenant.yml` by default.
+Application expects the config file at `/etc/cortex-tenant.yml` by default.
 
 ```yaml
 # Where to listen for write requests
 listen: 0.0.0.0:8080
 # Profiling API, disabled if ommited
 listen_pprof: 0.0.0.0:7008
-# Where to send the modified requests
+# Where to send the modified requests (Cortex)
 target: http://127.0.0.1:9091/receive
 # Log level
 log_level: warn
 # HTTP request timeout
 timeout: 10s
-# Timeout to wait on shutdown to let load balancers to detect that we're going away
+# Timeout to wait on shutdown to allow load balancers detect that we're going away
 # During this period the /alive endpoint will reply with HTTP 503
 # Set to 0s to disable
 timeout_shutdown: 10s
@@ -52,8 +53,9 @@ tenant:
   label_remove: true
   # To which header to add the tenant ID
   header: X-Scope-OrgID
-  # Which tenant ID to use if the label is missing
-  default: default
+  # Which tenant ID to use if the label is missing in any of the timeseries
+  # If this is not set or empty then the write request will be rejected with HTTP code 400
+  default: foobar
 ```
 
 ## Building
