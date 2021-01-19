@@ -6,6 +6,10 @@
 
 Prometheus remote write proxy which marks timeseries with a Cortex tenant ID based on labels.
 
+## Architecture
+
+![Architecture](architecture.svg)
+
 ## Overview
 
 Cortex tenants (separate namespaces where metrics are stored to and queried from) are identified by a `X-Scope-OrgID` HTTP header on both writes and queries.
@@ -25,6 +29,11 @@ This proxy solves the problem:
 ## Usage
 
 - Get `rpm` or `deb` for amd64 from the Releases page. For building see below.
+
+### HTTP Endpoints
+
+- GET `/alive` returns 200 by default and 503 if the service is shutting down (if `timeout_shutdown` setting is > 0)
+- POST `/push` receives metrics from Prometheus - configure remote write to send here
 
 ### Configuration
 
