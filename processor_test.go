@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -21,12 +22,10 @@ listen_pprof: 0.0.0.0:7008
 target: http://127.0.0.1:9091/receive
 log_level: debug
 timeout: 50ms
-timeout_shutdown: 0s
+timeout_shutdown: 100ms
 
 tenant:
-  label: __tenant__
   label_remove: false
-  header: X-Scope-OrgID
   default: default
 `
 )
@@ -44,7 +43,7 @@ var (
 
 	testTS1 = prompb.TimeSeries{
 		Labels: []prompb.Label{
-			prompb.Label{
+			{
 				Name:  "__tenant__",
 				Value: "foobar",
 			},
@@ -57,7 +56,7 @@ var (
 
 	testTS2 = prompb.TimeSeries{
 		Labels: []prompb.Label{
-			prompb.Label{
+			{
 				Name:  "__tenant__",
 				Value: "foobaz",
 			},
@@ -70,7 +69,7 @@ var (
 
 	testTS3 = prompb.TimeSeries{
 		Labels: []prompb.Label{
-			prompb.Label{
+			{
 				Name:  "__tenantXXX",
 				Value: "foobaz",
 			},
@@ -79,7 +78,7 @@ var (
 
 	testTS4 = prompb.TimeSeries{
 		Labels: []prompb.Label{
-			prompb.Label{
+			{
 				Name:  "__tenant__",
 				Value: "foobaz",
 			},
@@ -106,6 +105,15 @@ var (
 	testWRQ2 = &prompb.WriteRequest{
 		Timeseries: []prompb.TimeSeries{
 			testTS2,
+		},
+	}
+
+	testWRQ3 = &prompb.WriteRequest{}
+	testWRQ4 = &prompb.WriteRequest{
+		Metadata: []prompb.MetricMetadata{
+			{
+				MetricFamilyName: "foobar",
+			},
 		},
 	}
 )
@@ -139,6 +147,11 @@ func sinkHandler(ctx *fh.RequestCtx) {
 	ctx.WriteString("Ok")
 }
 
+func Test_config(t *testing.T) {
+	_, err := configLoad("config.yml")
+	assert.Nil(t, err)
+}
+
 func Test_handle(t *testing.T) {
 	cfg, err := configParse([]byte(testConfig))
 	assert.Nil(t, err)
@@ -151,7 +164,13 @@ func Test_handle(t *testing.T) {
 	err = p.run()
 	assert.Nil(t, err)
 
-	buf, err := p.marshal(testWRQ)
+	wrq1, err := p.marshal(testWRQ)
+	assert.Nil(t, err)
+
+	wrq3, err := p.marshal(testWRQ3)
+	assert.Nil(t, err)
+
+	wrq4, err := p.marshal(testWRQ4)
 	assert.Nil(t, err)
 
 	s := &fh.Server{
@@ -170,7 +189,7 @@ func Test_handle(t *testing.T) {
 
 	req.Header.SetMethod("POST")
 	req.SetRequestURI("http://127.0.0.1/push")
-	req.SetBody(buf)
+	req.SetBody(wrq1)
 
 	err = c.Do(req, resp)
 	assert.Nil(t, err)
@@ -179,13 +198,13 @@ func Test_handle(t *testing.T) {
 
 	go s.Serve(cfg.pipeOut)
 
-	// Success
+	// Success 1
 	req.Reset()
 	resp.Reset()
 
 	req.Header.SetMethod("POST")
 	req.SetRequestURI("http://127.0.0.1/push")
-	req.SetBody(buf)
+	req.SetBody(wrq1)
 
 	err = c.Do(req, resp)
 	assert.Nil(t, err)
@@ -193,7 +212,33 @@ func Test_handle(t *testing.T) {
 	assert.Equal(t, 200, resp.StatusCode())
 	assert.Equal(t, "Ok", string(resp.Body()))
 
-	// Error
+	// Success 2
+	req.Reset()
+	resp.Reset()
+
+	req.Header.SetMethod("POST")
+	req.SetRequestURI("http://127.0.0.1/push")
+	req.SetBody(wrq4)
+
+	err = c.Do(req, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 200, resp.StatusCode())
+
+	// Error 0
+	req.Reset()
+	resp.Reset()
+
+	req.Header.SetMethod("POST")
+	req.SetRequestURI("http://127.0.0.1/push")
+	req.SetBody(wrq3)
+
+	err = c.Do(req, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 400, resp.StatusCode())
+
+	// Error 1
 	req.Reset()
 	resp.Reset()
 
@@ -227,12 +272,27 @@ func Test_handle(t *testing.T) {
 
 	req.Header.SetMethod("POST")
 	req.SetRequestURI("http://127.0.0.1/push")
-	req.SetBody(buf)
+	req.SetBody(wrq1)
 
 	err = c.Do(req, resp)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 500, resp.StatusCode())
+
+	// Close
+	go p.close()
+	time.Sleep(30 * time.Millisecond)
+
+	req.Reset()
+	resp.Reset()
+
+	req.Header.SetMethod("GET")
+	req.SetRequestURI("http://127.0.0.1/alive")
+
+	err = c.Do(req, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 503, resp.StatusCode())
 }
 
 func Test_processTimeseries(t *testing.T) {
@@ -278,8 +338,6 @@ func Test_marshal(t *testing.T) {
 
 	assert.Equal(t, testTS1, wrq.Timeseries[0])
 	assert.Equal(t, testTS2, wrq.Timeseries[1])
-
-	p.close()
 }
 
 func Test_createWriteRequests(t *testing.T) {

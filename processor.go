@@ -101,7 +101,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	if !bytes.Equal(ctx.Path(), []byte("/push")) {
-		ctx.Error("Unknown URL", fh.StatusNotFound)
+		ctx.SetStatusCode(fh.StatusNotFound)
 		return
 	}
 

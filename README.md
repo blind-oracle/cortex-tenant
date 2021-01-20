@@ -12,7 +12,7 @@ Prometheus remote write proxy which marks timeseries with a Cortex tenant ID bas
 
 ## Overview
 
-Cortex tenants (separate namespaces where metrics are stored to and queried from) are identified by a `X-Scope-OrgID` HTTP header on both writes and queries.
+Cortex tenants (separate namespaces where metrics are stored to and queried from) are identified by `X-Scope-OrgID` HTTP header on both writes and queries.
 
 Problem is that Prometheus can't be configured to send this header. And even if it was possible to set it in the remote write configuration - it would be the same for all jobs. This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
@@ -80,7 +80,7 @@ scrape_configs:
     scrape_interval: 60s
     static_configs:
       - targets:
-          - target1: 9090
+          - target1:9090
         labels:
           tenant: foobar
 
@@ -88,7 +88,7 @@ scrape_configs:
     scrape_interval: 60s
     static_configs:
       - targets:
-          - target2: 9090
+          - target2:9090
         labels:
           tenant: deadbeef
 ```
