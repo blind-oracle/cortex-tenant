@@ -16,7 +16,7 @@ Cortex tenants (separate namespaces where metrics are stored to and queried from
 
 This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
-This proxy solves the problem:
+This proxy solves the problem using the following logic:
 
 - Receive Prometheus remote write
 - Search each timeseries for a specific label name and extract a tenant ID from its value.
@@ -40,9 +40,9 @@ This proxy solves the problem:
 Application expects the config file at `/etc/cortex-tenant.yml` by default.
 
 ```yaml
-# Where to listen for write requests
+# Where to listen for incoming write requests from Prometheus
 listen: 0.0.0.0:8080
-# Profiling API, disabled if ommited
+# Profiling API, remove to disable
 listen_pprof: 0.0.0.0:7008
 # Where to send the modified requests (Cortex)
 target: http://127.0.0.1:9091/receive
@@ -50,9 +50,9 @@ target: http://127.0.0.1:9091/receive
 log_level: warn
 # HTTP request timeout
 timeout: 10s
-# Timeout to wait on shutdown to allow load balancers detect that we're going away
-# During this period the /alive endpoint will reply with HTTP 503
-# Set to 0s to disable
+# Timeout to wait on shutdown to allow load balancers detect that we're going away.
+# During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
+# Set to 0s to disable.
 timeout_shutdown: 10s
 
 tenant:
@@ -63,9 +63,37 @@ tenant:
   # To which header to add the tenant ID
   header: X-Scope-OrgID
   # Which tenant ID to use if the label is missing in any of the timeseries
-  # If this is not set or empty then the write request will be rejected with HTTP code 400
+  # If this is not set or empty then the write request with missing tenant label
+  # will be rejected with HTTP code 400
   default: foobar
 ```
+
+### Prometheus configuration example
+
+```yaml
+remote_write:
+  - name: cortex_tenant
+    url: http://127.0.0.1:8080/push
+
+scrape_configs:
+  - job_name: job1
+    scrape_interval: 60s
+    static_configs:
+      - targets:
+          - target1: 9090
+        labels:
+          tenant: foobar
+
+  - job_name: job2
+    scrape_interval: 60s
+    static_configs:
+      - targets:
+          - target2: 9090
+        labels:
+          tenant: deadbeef
+```
+
+This would result in `job1` metrics ending up in the `foobar` tenant in cortex and `job2` in `deadbeef`.
 
 ## Building
 

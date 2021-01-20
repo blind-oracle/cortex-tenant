@@ -12,6 +12,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/google/uuid"
+	me "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/prompb"
 	fh "github.com/valyala/fasthttp"
@@ -82,7 +83,7 @@ func (p *processor) run() (err error) {
 	}
 
 	go p.srv.Serve(l)
-	return nil
+	return
 }
 
 func (p *processor) handle(ctx *fh.RequestCtx) {
@@ -110,11 +111,13 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	if len(wrReqIn.Timeseries) == 0 {
+		ctx.Error("No timeseries found in the request", fh.StatusBadRequest)
+		return
+	}
+
 	clientIP := ctx.RemoteAddr()
 	reqID, _ := uuid.NewRandom()
-
-	ok := 0
-	var res result
 
 	m, err := p.createWriteRequests(wrReqIn)
 	if err != nil {
@@ -122,27 +125,28 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
-	for _, r := range p.dispatch(clientIP, reqID, m) {
-		if r.err != nil {
-			err = r.err
-			p.Errorf("src=%s %s", clientIP, err)
-		} else if r.code < 200 || r.code > 299 {
-			if res.code == 0 {
-				res = r
-			}
+	var errs *me.Error
+	results := p.dispatch(clientIP, reqID, m)
 
-			p.Errorf("src=%s req_id=%s http code not 2xx (%d): %s", clientIP, reqID, r.code, string(r.body))
-		} else {
-			ok++
+	for _, r := range results {
+		if r.err != nil {
+			errs = me.Append(errs, r.err)
+			p.Errorf("src=%s %s", clientIP, r.err)
+		} else if r.code < 200 || r.code >= 300 {
+			errs = me.Append(errs, fmt.Errorf("HTTP code %d (%s)", r.code, string(r.body)))
+			p.Errorf("src=%s req_id=%s HTTP code %d (%s)", clientIP, reqID, r.code, string(r.body))
 		}
 	}
 
-	if err != nil {
-		ctx.Error(err.Error(), fh.StatusInternalServerError)
-	} else if res.code != 0 {
-		ctx.SetStatusCode(res.code)
-		ctx.SetBody(res.body)
+	// Return 500 for any error
+	if errs.ErrorOrNil() != nil {
+		ctx.Error(errs.Error(), fh.StatusInternalServerError)
+		return
 	}
+
+	// Otherwise if all went fine return the code and body from 1st request
+	ctx.SetBody(results[0].body)
+	ctx.SetStatusCode(results[0].code)
 
 	return
 }
@@ -279,13 +283,15 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.SetRequestURI(p.cfg.Target)
 	req.SetBody(buf.b)
 
-	if err = p.cli.Do(req, resp); err != nil {
+	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
 		return
 	}
 
+	code = resp.Header.StatusCode()
 	body = make([]byte, len(resp.Body()))
 	copy(body, resp.Body())
-	return resp.Header.StatusCode(), body, nil
+
+	return
 }
 
 func (p *processor) close() (err error) {

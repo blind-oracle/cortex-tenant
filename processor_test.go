@@ -20,7 +20,7 @@ listen_pprof: 0.0.0.0:7008
 
 target: http://127.0.0.1:9091/receive
 log_level: debug
-timeout: 10s
+timeout: 50ms
 timeout_shutdown: 0s
 
 tenant:
@@ -119,6 +119,10 @@ func createProcessor() (*processor, error) {
 	return newProcessor(*cfg), nil
 }
 
+func sinkHandlerError(ctx *fh.RequestCtx) {
+	ctx.Error("Some error", fh.StatusInternalServerError)
+}
+
 func sinkHandler(ctx *fh.RequestCtx) {
 	reqBuf, err := snappy.Decode(nil, ctx.Request.Body())
 	if err != nil {
@@ -131,6 +135,8 @@ func sinkHandler(ctx *fh.RequestCtx) {
 		ctx.Error(err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	ctx.WriteString("Ok")
 }
 
 func Test_handle(t *testing.T) {
@@ -145,11 +151,12 @@ func Test_handle(t *testing.T) {
 	err = p.run()
 	assert.Nil(t, err)
 
+	buf, err := p.marshal(testWRQ, nil)
+	assert.Nil(t, err)
+
 	s := &fh.Server{
 		Handler: sinkHandler,
 	}
-
-	go s.Serve(cfg.pipeOut)
 
 	c := &fh.Client{
 		Dial: func(a string) (net.Conn, error) {
@@ -157,10 +164,7 @@ func Test_handle(t *testing.T) {
 		},
 	}
 
-	buf, err := p.marshal(testWRQ, nil)
-	assert.Nil(t, err)
-
-	// Success
+	// Connection failed
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
 
@@ -171,11 +175,27 @@ func Test_handle(t *testing.T) {
 	err = c.Do(req, resp)
 	assert.Nil(t, err)
 
+	assert.Equal(t, 500, resp.StatusCode())
+
+	go s.Serve(cfg.pipeOut)
+
+	// Success
+	req.Reset()
+	resp.Reset()
+
+	req.Header.SetMethod("POST")
+	req.SetRequestURI("http://127.0.0.1/push")
+	req.SetBody(buf)
+
+	err = c.Do(req, resp)
+	assert.Nil(t, err)
+
 	assert.Equal(t, 200, resp.StatusCode())
+	assert.Equal(t, "Ok", string(resp.Body()))
 
 	// Error
-	req = fh.AcquireRequest()
-	resp = fh.AcquireResponse()
+	req.Reset()
+	resp.Reset()
 
 	req.Header.SetMethod("POST")
 	req.SetRequestURI("http://127.0.0.1/push")
@@ -187,8 +207,8 @@ func Test_handle(t *testing.T) {
 	assert.Equal(t, 400, resp.StatusCode())
 
 	// Error 2
-	req = fh.AcquireRequest()
-	resp = fh.AcquireResponse()
+	req.Reset()
+	resp.Reset()
 
 	req.Header.SetMethod("POST")
 	req.SetRequestURI("http://127.0.0.1/push")
@@ -198,6 +218,21 @@ func Test_handle(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 400, resp.StatusCode())
+
+	// Error 3
+	s.Handler = sinkHandlerError
+
+	req.Reset()
+	resp.Reset()
+
+	req.Header.SetMethod("POST")
+	req.SetRequestURI("http://127.0.0.1/push")
+	req.SetBody(buf)
+
+	err = c.Do(req, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 500, resp.StatusCode())
 }
 
 func Test_processTimeseries(t *testing.T) {
