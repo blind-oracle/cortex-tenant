@@ -42,9 +42,9 @@ var (
 		Timestamp: 101112,
 	}
 
-	testTS1 = &prompb.TimeSeries{
-		Labels: []*prompb.Label{
-			&prompb.Label{
+	testTS1 = prompb.TimeSeries{
+		Labels: []prompb.Label{
+			prompb.Label{
 				Name:  "__tenant__",
 				Value: "foobar",
 			},
@@ -55,9 +55,9 @@ var (
 		},
 	}
 
-	testTS2 = &prompb.TimeSeries{
-		Labels: []*prompb.Label{
-			&prompb.Label{
+	testTS2 = prompb.TimeSeries{
+		Labels: []prompb.Label{
+			prompb.Label{
 				Name:  "__tenant__",
 				Value: "foobaz",
 			},
@@ -68,18 +68,18 @@ var (
 		},
 	}
 
-	testTS3 = &prompb.TimeSeries{
-		Labels: []*prompb.Label{
-			&prompb.Label{
+	testTS3 = prompb.TimeSeries{
+		Labels: []prompb.Label{
+			prompb.Label{
 				Name:  "__tenantXXX",
 				Value: "foobaz",
 			},
 		},
 	}
 
-	testTS4 = &prompb.TimeSeries{
-		Labels: []*prompb.Label{
-			&prompb.Label{
+	testTS4 = prompb.TimeSeries{
+		Labels: []prompb.Label{
+			prompb.Label{
 				Name:  "__tenant__",
 				Value: "foobaz",
 			},
@@ -91,20 +91,20 @@ var (
 	}
 
 	testWRQ = &prompb.WriteRequest{
-		Timeseries: []*prompb.TimeSeries{
+		Timeseries: []prompb.TimeSeries{
 			testTS1,
 			testTS2,
 		},
 	}
 
 	testWRQ1 = &prompb.WriteRequest{
-		Timeseries: []*prompb.TimeSeries{
+		Timeseries: []prompb.TimeSeries{
 			testTS1,
 		},
 	}
 
 	testWRQ2 = &prompb.WriteRequest{
-		Timeseries: []*prompb.TimeSeries{
+		Timeseries: []prompb.TimeSeries{
 			testTS2,
 		},
 	}
@@ -151,7 +151,7 @@ func Test_handle(t *testing.T) {
 	err = p.run()
 	assert.Nil(t, err)
 
-	buf, err := p.marshal(testWRQ, nil)
+	buf, err := p.marshal(testWRQ)
 	assert.Nil(t, err)
 
 	s := &fh.Server{
@@ -243,11 +243,11 @@ func Test_processTimeseries(t *testing.T) {
 	p := newProcessor(*cfg)
 	assert.Nil(t, err)
 
-	ten, err := p.processTimeseries(testTS4)
+	ten, err := p.processTimeseries(&testTS4)
 	assert.Nil(t, err)
 	assert.Equal(t, "foobaz", ten)
 
-	ten, err = p.processTimeseries(testTS3)
+	ten, err = p.processTimeseries(&testTS3)
 	assert.Nil(t, err)
 	assert.Equal(t, "default", ten)
 
@@ -255,7 +255,7 @@ func Test_processTimeseries(t *testing.T) {
 	p = newProcessor(*cfg)
 	assert.Nil(t, err)
 
-	ten, err = p.processTimeseries(testTS3)
+	ten, err = p.processTimeseries(&testTS3)
 	assert.NotNil(t, err)
 }
 
@@ -270,7 +270,7 @@ func Test_marshal(t *testing.T) {
 	assert.NotNil(t, err)
 
 	buf := make([]byte, 1024)
-	buf, err = p.marshal(testWRQ, buf)
+	buf, err = p.marshal(testWRQ)
 	assert.Nil(t, err)
 
 	wrq, err := p.unmarshal(buf)
@@ -299,11 +299,10 @@ func Test_createWriteRequests(t *testing.T) {
 
 func Benchmark_marshal(b *testing.B) {
 	p, _ := createProcessor()
-	buf := make([]byte, 1024)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		buf, _ = p.marshal(testWRQ, buf)
+		buf, _ := p.marshal(testWRQ)
 		_, _ = p.unmarshal(buf)
 	}
 }

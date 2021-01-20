@@ -4,7 +4,6 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"net/http"
@@ -13,28 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	bufSize = 1024 * 128
-)
-
-type buffer struct {
-	b []byte
-}
-
-func (b *buffer) reset() {
-	b.b = b.b[:bufSize]
-}
-
 var (
 	version = "0.0.0"
-
-	bufferPool = sync.Pool{
-		New: func() interface{} {
-			return &buffer{
-				b: make([]byte, 0, bufSize),
-			}
-		},
-	}
 )
 
 func main() {

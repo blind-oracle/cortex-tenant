@@ -15,15 +15,14 @@ require (
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.15.0
-	github.com/prometheus/prometheus v2.5.0+incompatible
+	github.com/prometheus/prometheus v1.8.2-0.20210120113717-82330b96ee74
 	github.com/sirupsen/logrus v1.7.0
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/valyala/fasthttp v1.19.0
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f // indirect
+	google.golang.org/genproto v0.0.0-20210119180700-e258113e47cc // indirect
 	google.golang.org/grpc v1.35.0 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )

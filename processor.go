@@ -112,6 +112,11 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	if len(wrReqIn.Timeseries) == 0 {
+		// If there's metadata - just accept the request and drop it
+		if len(wrReqIn.Metadata) > 0 {
+			return
+		}
+
 		ctx.Error("No timeseries found in the request", fh.StatusBadRequest)
 		return
 	}
@@ -151,12 +156,12 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	return
 }
 
-func (p *processor) createWriteRequests(in *prompb.WriteRequest) (map[string]*prompb.WriteRequest, error) {
+func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[string]*prompb.WriteRequest, error) {
 	// Create per-tenant write requests
 	m := map[string]*prompb.WriteRequest{}
 
-	for _, ts := range in.Timeseries {
-		tenant, err := p.processTimeseries(ts)
+	for _, ts := range wrReqIn.Timeseries {
+		tenant, err := p.processTimeseries(&ts)
 		if err != nil {
 			return nil, err
 		}
@@ -174,11 +179,7 @@ func (p *processor) createWriteRequests(in *prompb.WriteRequest) (map[string]*pr
 }
 
 func (p *processor) unmarshal(b []byte) (*prompb.WriteRequest, error) {
-	buf := bufferPool.Get().(*buffer)
-	buf.reset()
-	defer bufferPool.Put(buf)
-
-	decoded, err := snappy.Decode(buf.b, b)
+	decoded, err := snappy.Decode(nil, b)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to unpack Snappy")
 	}
@@ -191,19 +192,16 @@ func (p *processor) unmarshal(b []byte) (*prompb.WriteRequest, error) {
 	return req, nil
 }
 
-func (p *processor) marshal(wr *prompb.WriteRequest, bufDst []byte) (bufOut []byte, err error) {
-	buf := bufferPool.Get().(*buffer)
-	buf.reset()
-	defer bufferPool.Put(buf)
+func (p *processor) marshal(wr *prompb.WriteRequest) (bufOut []byte, err error) {
+	b := make([]byte, wr.Size())
 
 	// Marshal to Protobuf
-	l, err := wr.MarshalTo(buf.b)
-	if err != nil {
+	if _, err = wr.MarshalTo(b); err != nil {
 		return
 	}
 
 	// Compress with Snappy
-	return snappy.Encode(bufDst, buf.b[:l]), nil
+	return snappy.Encode(nil, b), nil
 }
 
 func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*prompb.WriteRequest) (res []result) {
@@ -256,19 +254,16 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 }
 
 func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
-	buf := bufferPool.Get().(*buffer)
-	buf.reset()
-
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
 
 	defer func() {
 		fh.ReleaseRequest(req)
 		fh.ReleaseResponse(resp)
-		bufferPool.Put(buf)
 	}()
 
-	if buf.b, err = p.marshal(wr, buf.b); err != nil {
+	buf, err := p.marshal(wr)
+	if err != nil {
 		return
 	}
 
@@ -281,7 +276,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.Header.Set(p.cfg.Tenant.Header, tenant)
 
 	req.SetRequestURI(p.cfg.Target)
-	req.SetBody(buf.b)
+	req.SetBody(buf)
 
 	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
 		return
