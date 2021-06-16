@@ -24,6 +24,7 @@ type config struct {
 		LabelRemove bool `yaml:"label_remove"`
 		Header      string
 		Default     string
+		AcceptAll   bool `yaml:"accept_all"`
 	}
 
 	pipeIn  *fhu.InmemoryListener
