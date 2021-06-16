@@ -66,6 +66,10 @@ tenant:
   # If this is not set or empty then the write request with missing tenant label
   # will be rejected with HTTP code 400
   default: foobar
+  # Enable if you want all metrics from Prometheus to be accepted with a 200 
+  # Regardless of the response from Cortex. This can lose metrics if Cortex is 
+  # throwing rejections.
+  accept_all: false
 ```
 
 ### Prometheus configuration example
