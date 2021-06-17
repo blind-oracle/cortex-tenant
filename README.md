@@ -100,3 +100,23 @@ This would result in `job1` metrics ending up in the `foobar` tenant in cortex a
 `make build` should create you an _amd64_ binary.
 
 If you want `deb` or `rpm` packages then install [FPM](https://fpm.readthedocs.io) and then run `make rpm` or `make deb` to create the packages.
+
+## Containerization
+
+To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_PATH` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`. 
+This file get written to the workdir `/data`.
+
+You can overwrite the default config by starting the container with 
+```bash
+docker container run \
+-v <CONFIG_LOCATION>:/data/cortex-tenant.yml \
+vincentfree/cortex-tenant:1.3.3
+```
+
+you canalsowrite it to your prefered location and update the environment variable like this
+```bash
+docker container run \
+-e CONFIG_PATH=/data/config.yml \
+-v <CONFIG_LOCATION>:/data/config.yml \
+vincentfree/cortex-tenant:1.3.3
+```
