@@ -25,7 +25,7 @@ RUN mkdir /data && cp /build/deploy/cortex-tenant.yml /data/cortex-tenant.yml
 
 FROM scratch
 
-ENV CONFIG_FILE cortex-tenant.yml
+ENV CONFIG_FILE /data/cortex-tenant.yml
 COPY --chown=65534:0 --from=builder /dist /
 
 COPY --chown=65534:0 --from=builder /data /data
@@ -35,4 +35,4 @@ WORKDIR /data
 
 COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT ["/cortex-tenant"]
-CMD ["-config", "/data/cortex-tenant.yml"]
+CMD ["-config", "$CONFIG_PATH"]
