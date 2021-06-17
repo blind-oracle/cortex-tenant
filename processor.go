@@ -143,14 +143,15 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		}
 	}
 
-	// Return 500 for any error unless AccpetAll true
-	if p.cfg.Tenant.AcceptAll {
-		results[0].code = 200
-	}
-
 	if errs.ErrorOrNil() != nil {
 		ctx.Error(errs.Error(), fh.StatusInternalServerError)
 		return
+	}
+
+	// Return 500 for any error unless AccpetAll true
+	if p.cfg.Tenant.AcceptAll {
+		results[0].code = 204
+		results[0].body = nil
 	}
 
 	// Otherwise if all went fine return the code and body from 1st request
