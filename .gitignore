@@ -4,3 +4,4 @@ generate
 .out
 *.rpm
 *.deb
+config.yaml
