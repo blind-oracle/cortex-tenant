@@ -18,6 +18,7 @@ type config struct {
 	LogLevel        string `yaml:"log_level"`
 	Timeout         time.Duration
 	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
+	Concurrency     int
 
 	Tenant struct {
 		Label       string

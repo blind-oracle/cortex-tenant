@@ -5,6 +5,7 @@ target: http://127.0.0.1:9091/receive
 log_level: debug
 timeout: 10s
 timeout_shutdown: 0s
+concurrency: 10
 
 tenant:
   label: tenant
