@@ -42,6 +42,10 @@ func configParse(b []byte) (*config, error) {
 		cfg.Timeout = 10 * time.Second
 	}
 
+	if cfg.Concurrency == 0 {
+		cfg.Concurrency = 512
+	}
+
 	if cfg.Tenant.Header == "" {
 		cfg.Tenant.Header = "X-Scope-OrgID"
 	}
