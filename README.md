@@ -54,6 +54,8 @@ timeout: 10s
 # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
 # Set to 0s to disable.
 timeout_shutdown: 10s
+# Max number of parallel incoming HTTP requests to handle
+concurrency: 10
 
 tenant:
   # Which label to look for the tenant information
@@ -66,8 +68,8 @@ tenant:
   # If this is not set or empty then the write request with missing tenant label
   # will be rejected with HTTP code 400
   default: foobar
-  # Enable if you want all metrics from Prometheus to be accepted with a 200 
-  # Regardless of the response from Cortex. This can lose metrics if Cortex is 
+  # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
+  # regardless of the response from Cortex. This can lose metrics if Cortex is
   # throwing rejections.
   accept_all: false
 ```
@@ -107,17 +109,19 @@ If you want `deb` or `rpm` packages then install [FPM](https://fpm.readthedocs.i
 
 ## Containerization
 
-To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_PATH` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`. 
+To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_PATH` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`.
 This file get written to the workdir `/data`.
 
-You can overwrite the default config by starting the container with 
+You can overwrite the default config by starting the container with
+
 ```bash
 docker container run \
 -v <CONFIG_LOCATION>:/data/cortex-tenant.yml \
 vincentfree/cortex-tenant:1.3.3
 ```
 
-you canalsowrite it to your prefered location and update the environment variable like this
+You can also write it to your prefered location and update the environment variable like this
+
 ```bash
 docker container run \
 -e CONFIG_PATH=/data/config.yml \

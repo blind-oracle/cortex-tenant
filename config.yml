@@ -12,3 +12,4 @@ tenant:
   label_remove: true
   header: X-Scope-OrgID
   default: ""
+  accept_all: false
