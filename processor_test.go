@@ -148,8 +148,9 @@ func sinkHandler(ctx *fh.RequestCtx) {
 }
 
 func Test_config(t *testing.T) {
-	_, err := configLoad("config.yml")
+	cfg, err := configLoad("config.yml")
 	assert.Nil(t, err)
+	assert.Equal(t, 10, cfg.Concurrency)
 }
 
 func Test_handle(t *testing.T) {

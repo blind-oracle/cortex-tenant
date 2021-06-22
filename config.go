@@ -18,6 +18,7 @@ type config struct {
 	LogLevel        string `yaml:"log_level"`
 	Timeout         time.Duration
 	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
+	Concurrency     int
 
 	Tenant struct {
 		Label       string
@@ -39,6 +40,10 @@ func configParse(b []byte) (*config, error) {
 
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10 * time.Second
+	}
+
+	if cfg.Concurrency == 0 {
+		cfg.Concurrency = 512
 	}
 
 	if cfg.Tenant.Header == "" {

@@ -50,6 +50,8 @@ func newProcessor(c config) *processor {
 		ReadTimeout:  c.Timeout,
 		WriteTimeout: c.Timeout,
 		IdleTimeout:  60 * time.Second,
+
+		Concurrency: c.Concurrency,
 	}
 
 	p.cli = &fh.Client{
