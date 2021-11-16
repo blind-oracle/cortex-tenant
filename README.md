@@ -16,12 +16,12 @@ Cortex tenants (separate namespaces where metrics are stored to and queried from
 
 Problem is that Prometheus can't be configured to send this header. And even if it was possible to set it in the remote write configuration - it would be the same for all jobs. This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
-This proxy solves the problem using the following logic:
+This software solves the problem using the following logic:
 
 - Receive Prometheus remote write
 - Search each timeseries for a specific label name and extract a tenant ID from its value.
-  If the label wasn't not found then it can fall back to a configurable default ID.
-  If none is configured then the write request will be rejected.
+  If the label wasn't found then it can fall back to a configurable default ID.
+  If none is configured then the write request will be rejected with HTTP code 400
 - Optionally removes this label from the timeseries
 - Groups timeseries by tenant
 - Issues a number of parallel per-tenant HTTP requests to Cortex with the relevant tenant HTTP header (`X-Scope-OrgID` by default)
