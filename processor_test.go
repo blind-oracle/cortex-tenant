@@ -316,7 +316,7 @@ func Test_processTimeseries(t *testing.T) {
 	p = newProcessor(*cfg)
 	assert.Nil(t, err)
 
-	ten, err = p.processTimeseries(&testTS3)
+	_, err = p.processTimeseries(&testTS3)
 	assert.NotNil(t, err)
 }
 
@@ -330,8 +330,8 @@ func Test_marshal(t *testing.T) {
 	_, err = p.unmarshal(snappy.Encode(nil, []byte{0xFF}))
 	assert.NotNil(t, err)
 
-	buf := make([]byte, 1024)
-	buf, err = p.marshal(testWRQ)
+	//buf := make([]byte, 1024)
+	buf, err := p.marshal(testWRQ)
 	assert.Nil(t, err)
 
 	wrq, err := p.unmarshal(buf)

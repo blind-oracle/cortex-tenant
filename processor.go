@@ -145,22 +145,22 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		}
 	}
 
+	// Return 500 for any error unless AccpetAll true
+	if p.cfg.Tenant.AcceptAll {
+		results[0].code = 204
+		results[0].body = nil
+		goto out
+	}
+
 	if errs.ErrorOrNil() != nil {
 		ctx.Error(errs.Error(), fh.StatusInternalServerError)
 		return
 	}
 
-	// Return 500 for any error unless AccpetAll true
-	if p.cfg.Tenant.AcceptAll {
-		results[0].code = 204
-		results[0].body = nil
-	}
-
+out:
 	// Otherwise if all went fine return the code and body from 1st request
 	ctx.SetBody(results[0].body)
 	ctx.SetStatusCode(results[0].code)
-
-	return
 }
 
 func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[string]*prompb.WriteRequest, error) {
@@ -245,7 +245,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 
 	if tenant == "" {
 		if p.cfg.Tenant.Default == "" {
-			return "", fmt.Errorf("Label '%s' not found", p.cfg.Tenant.Label)
+			return "", fmt.Errorf("label '%s' not found", p.cfg.Tenant.Label)
 		}
 
 		return p.cfg.Tenant.Default, nil
