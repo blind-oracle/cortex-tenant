@@ -135,21 +135,28 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	var errs *me.Error
 	results := p.dispatch(clientIP, reqID, m)
 
+	code, body := 0, []byte("Ok")
+
+	// Return 204 regardless of errors if AcceptAll is enabled
+	if p.cfg.Tenant.AcceptAll {
+		code, body = 204, nil
+		goto out
+	}
+
 	for _, r := range results {
 		if r.err != nil {
 			errs = me.Append(errs, r.err)
 			p.Errorf("src=%s %s", clientIP, r.err)
-		} else if r.code < 200 || r.code >= 300 {
-			errs = me.Append(errs, fmt.Errorf("HTTP code %d (%s)", r.code, string(r.body)))
+			continue
+		}
+
+		if r.code < 200 || r.code >= 300 {
 			p.Errorf("src=%s req_id=%s HTTP code %d (%s)", clientIP, reqID, r.code, string(r.body))
 		}
-	}
 
-	// Return 500 for any error unless AccpetAll true
-	if p.cfg.Tenant.AcceptAll {
-		results[0].code = 204
-		results[0].body = nil
-		goto out
+		if r.code > code {
+			code, body = r.code, r.body
+		}
 	}
 
 	if errs.ErrorOrNil() != nil {
@@ -158,9 +165,9 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 out:
-	// Otherwise if all went fine return the code and body from 1st request
-	ctx.SetBody(results[0].body)
-	ctx.SetStatusCode(results[0].code)
+	// Pass back max status code from upstream response
+	ctx.SetBody(body)
+	ctx.SetStatusCode(code)
 }
 
 func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[string]*prompb.WriteRequest, error) {
