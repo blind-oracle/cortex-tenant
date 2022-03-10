@@ -113,18 +113,30 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	clientIP := ctx.RemoteAddr()
+	reqID, _ := uuid.NewRandom()
+
 	if len(wrReqIn.Timeseries) == 0 {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
+			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
+				code, body, err := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
+				if err != nil {
+					ctx.Error(err.Error(), fh.StatusInternalServerError)
+					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, err)
+					return
+				}
+
+				ctx.SetStatusCode(code)
+				ctx.SetBody(body)
+			}
+
 			return
 		}
 
 		ctx.Error("No timeseries found in the request", fh.StatusBadRequest)
 		return
 	}
-
-	clientIP := ctx.RemoteAddr()
-	reqID, _ := uuid.NewRandom()
 
 	m, err := p.createWriteRequests(wrReqIn)
 	if err != nil {

@@ -56,6 +56,10 @@ timeout: 10s
 timeout_shutdown: 10s
 # Max number of parallel incoming HTTP requests to handle
 concurrency: 10
+# Whether to forward metrics metadata from Prometheus to Cortex
+# Since metadata requests have no timeseries in them - we cannot divide them into tenants
+# So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
+metadata: false
 
 tenant:
   # Which label to look for the tenant information

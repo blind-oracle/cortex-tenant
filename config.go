@@ -19,6 +19,7 @@ type config struct {
 	Timeout         time.Duration
 	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
 	Concurrency     int
+	Metadata        bool
 
 	Tenant struct {
 		Label       string
