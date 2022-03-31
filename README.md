@@ -113,22 +113,19 @@ If you want `deb` or `rpm` packages then install [FPM](https://fpm.readthedocs.i
 
 ## Containerization
 
-To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_FILE` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`.
-This file get written to the workdir `/data`.
+To use the current container you need to overwrite the default configuration file, mount your configuration into to `/data/cortex-tenant.yml`.
 
-You can overwrite the default config by starting the container with
+You can overwrite the default config by starting the container with:
 
 ```bash
 docker container run \
 -v <CONFIG_LOCATION>:/data/cortex-tenant.yml \
-vincentfree/cortex-tenant:1.3.3
+ghcr.io/blind-oracle/cortex-tenant:1.6.1
 ```
 
-You can also write it to your prefered location and update the environment variable like this
+... or build your own Docker image:
 
-```bash
-docker container run \
--e CONFIG_FILE=/data/config.yml \
--v <CONFIG_LOCATION>:/data/config.yml \
-vincentfree/cortex-tenant:1.3.3
+```Dockerfile
+FROM ghcr.io/blind-oracle/cortex-tenant:1.6.1
+ADD my-config.yml /data/cortex-tenant.yml
 ```
