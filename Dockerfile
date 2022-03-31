@@ -35,4 +35,4 @@ WORKDIR /data
 
 COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT ["/cortex-tenant"]
-CMD ["-config", "$CONFIG_PATH"]
+CMD ["-config", "$CONFIG_FILE"]
