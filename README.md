@@ -113,7 +113,7 @@ If you want `deb` or `rpm` packages then install [FPM](https://fpm.readthedocs.i
 
 ## Containerization
 
-To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_PATH` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`.
+To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_FILE` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`.
 This file get written to the workdir `/data`.
 
 You can overwrite the default config by starting the container with
@@ -128,7 +128,7 @@ You can also write it to your prefered location and update the environment varia
 
 ```bash
 docker container run \
--e CONFIG_PATH=/data/config.yml \
+-e CONFIG_FILE=/data/config.yml \
 -v <CONFIG_LOCATION>:/data/config.yml \
 vincentfree/cortex-tenant:1.3.3
 ```
