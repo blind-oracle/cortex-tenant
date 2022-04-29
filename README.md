@@ -129,3 +129,13 @@ ghcr.io/blind-oracle/cortex-tenant:1.6.1
 FROM ghcr.io/blind-oracle/cortex-tenant:1.6.1
 ADD my-config.yml /data/cortex-tenant.yml
 ```
+
+### Deploy on Kubernetes
+
+`deploy/k8s` directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
+
+```bash
+kubectl apply -f deploy/k8s/cortex-tenant-deployment.yaml
+kubectl apply -f deploy/k8s/cortex-tenant-service.yaml
+kubectl apply -f deploy/k8s/config-file-configmap.yml
+```
