@@ -14,7 +14,7 @@ Prometheus remote write proxy which marks timeseries with a Cortex tenant ID bas
 
 Cortex tenants (separate namespaces where metrics are stored to and queried from) are identified by `X-Scope-OrgID` HTTP header on both writes and queries.
 
-Problem is that Prometheus can't be configured to send this header. And even if it was possible to set it in the remote write configuration - it would be the same for all jobs. This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
+~~Problem is that Prometheus can't be configured to send this header~~ Actually in some recent version (year 2021 onwards) this functionality was added, but the tenant is the same for all jobs. This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
 This software solves the problem using the following logic:
 
@@ -121,22 +121,29 @@ If you want `deb` or `rpm` packages then install [FPM](https://fpm.readthedocs.i
 
 ## Containerization
 
-To use the current container you need to overwrite the default configuration file. The Docker file uses a environment called `CONFIG_PATH` with the following value: `ENV CONFIG_FILE cortex-tenant.yml`.
-This file get written to the workdir `/data`.
+To use the current container you need to overwrite the default configuration file, mount your configuration into to `/data/cortex-tenant.yml`.
 
-You can overwrite the default config by starting the container with
+You can overwrite the default config by starting the container with:
 
 ```bash
 docker container run \
 -v <CONFIG_LOCATION>:/data/cortex-tenant.yml \
-vincentfree/cortex-tenant:1.3.3
+ghcr.io/blind-oracle/cortex-tenant:1.6.1
 ```
 
-You can also write it to your prefered location and update the environment variable like this
+... or build your own Docker image:
+
+```Dockerfile
+FROM ghcr.io/blind-oracle/cortex-tenant:1.6.1
+ADD my-config.yml /data/cortex-tenant.yml
+```
+
+### Deploy on Kubernetes
+
+`deploy/k8s` directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
 
 ```bash
-docker container run \
--e CONFIG_PATH=/data/config.yml \
--v <CONFIG_LOCATION>:/data/config.yml \
-vincentfree/cortex-tenant:1.3.3
+kubectl apply -f deploy/k8s/cortex-tenant-deployment.yaml
+kubectl apply -f deploy/k8s/cortex-tenant-service.yaml
+kubectl apply -f deploy/k8s/config-file-configmap.yml
 ```

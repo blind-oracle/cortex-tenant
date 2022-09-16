@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cortex-tenants-configmap
+  namespace: cortex
+data:
+  cortex-tenant.yml: |
+    # Where to listen for incoming write requests from Prometheus
+    listen: 0.0.0.0:8080
+    # Profiling API, remove to disable
+    listen_pprof: 0.0.0.0:7008
+    # Where to send the modified requests (Cortex)
+    target: http://cortex-distributor.cortex.svc:8080/api/v1/push
+    # Log level
+    log_level: warn
+    # HTTP request timeout
+    timeout: 10s
+    # Timeout to wait on shutdown to allow load balancers detect that we're going away.
+    # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
+    # Set to 0s to disable.
+    timeout_shutdown: 10s
+    # Max number of parallel incoming HTTP requests to handle
+    concurrency: 1000
+    # Whether to forward metrics metadata from Prometheus to Cortex
+    # Since metadata requests have no timeseries in them - we cannot divide them into tenants
+    # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
+    metadata: false
+    
+    tenant:
+      # Which label to look for the tenant information
+      label: tenant
+      # Whether to remove the tenant label from the request
+      label_remove: false
+      # To which header to add the tenant ID
+      header: X-Scope-OrgID
+      # Which tenant ID to use if the label is missing in any of the timeseries
+      # If this is not set or empty then the write request with missing tenant label
+      # will be rejected with HTTP code 400
+      default: cortex-tenant-default
+      # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
+      # regardless of the response from Cortex. This can lose metrics if Cortex is
+      # throwing rejections.
+      accept_all: false
