@@ -46,6 +46,14 @@ listen: 0.0.0.0:8080
 listen_pprof: 0.0.0.0:7008
 # Where to send the modified requests (Cortex)
 target: http://127.0.0.1:9091/receive
+
+# Authentication
+auth:
+  # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
+  egress:
+    username: foo
+    password: bar
+
 # Log level
 log_level: warn
 # HTTP request timeout

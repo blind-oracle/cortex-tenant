@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -20,6 +21,13 @@ type config struct {
 	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
 	Concurrency     int
 	Metadata        bool
+
+	Auth struct {
+		Egress struct {
+			Username string
+			Password string
+		}
+	}
 
 	Tenant struct {
 		Label       string
@@ -53,6 +61,12 @@ func configParse(b []byte) (*config, error) {
 
 	if cfg.Tenant.Label == "" {
 		cfg.Tenant.Label = "__tenant__"
+	}
+
+	if cfg.Auth.Egress.Username != "" {
+		if cfg.Auth.Egress.Password == "" {
+			return nil, fmt.Errorf("egress auth user specified, but the password is not")
+		}
 	}
 
 	return cfg, nil

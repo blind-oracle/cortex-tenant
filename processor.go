@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"sync"
@@ -33,6 +34,10 @@ type processor struct {
 	shuttingDown uint32
 
 	logger.Logger
+
+	auth struct {
+		egressHeader []byte
+	}
 }
 
 func newProcessor(c config) *processor {
@@ -60,6 +65,11 @@ func newProcessor(c config) *processor {
 		WriteTimeout:       c.Timeout,
 		MaxConnWaitTimeout: 1 * time.Second,
 		MaxConnsPerHost:    64,
+	}
+
+	if c.Auth.Egress.Username != "" {
+		authString := []byte(fmt.Sprintf("%s:%s", c.Auth.Egress.Username, c.Auth.Egress.Password))
+		p.auth.egressHeader = []byte("Basic " + base64.StdEncoding.EncodeToString(authString))
 	}
 
 	// For testing
@@ -300,6 +310,10 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
 	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
 	req.Header.Set(p.cfg.Tenant.Header, tenant)
+
+	if p.auth.egressHeader != nil {
+		req.Header.SetBytesV("Authorization", p.auth.egressHeader)
+	}
 
 	req.SetRequestURI(p.cfg.Target)
 	req.SetBody(buf)
