@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cortex-tenants-configmap
+  name: cortex-tenant-configmap
   namespace: cortex
 data:
   cortex-tenant.yml: |
