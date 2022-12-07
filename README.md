@@ -68,6 +68,10 @@ concurrency: 10
 # Since metadata requests have no timeseries in them - we cannot divide them into tenants
 # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
 metadata: false
+# If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
+# which can be quite verbose like 400 code - out-of-order samples or 429 on hitting ingestion limits
+# Also, those are already reported by other services like Cortex / Mimir distributors and ingesters
+log_response_errors: true
 
 tenant:
   # Which label to look for the tenant information

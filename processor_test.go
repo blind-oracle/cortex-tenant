@@ -175,8 +175,11 @@ func Test_handle(t *testing.T) {
 	assert.Nil(t, err)
 
 	s := &fh.Server{
-		Handler: sinkHandler,
+		Handler: sinkHandlerError,
 	}
+	// client.Do behaviour changed in https://github.com/valyala/fasthttp/pull/1346
+	// Don't run requests in a separate Goroutine anymore.
+	go s.Serve(cfg.pipeOut)
 
 	c := &fh.Client{
 		Dial: func(a string) (net.Conn, error) {
@@ -197,8 +200,7 @@ func Test_handle(t *testing.T) {
 
 	assert.Equal(t, 500, resp.StatusCode())
 
-	go s.Serve(cfg.pipeOut)
-
+	s.Handler = sinkHandler
 	// Success 1
 	req.Reset()
 	resp.Reset()

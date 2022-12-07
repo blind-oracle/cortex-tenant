@@ -13,6 +13,7 @@ timeout: 10s
 timeout_shutdown: 0s
 concurrency: 10
 metadata: false
+log_response_errors: true
 
 tenant:
   label: tenant

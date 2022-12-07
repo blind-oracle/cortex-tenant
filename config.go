@@ -16,11 +16,12 @@ type config struct {
 
 	Target string
 
-	LogLevel        string `yaml:"log_level"`
-	Timeout         time.Duration
-	TimeoutShutdown time.Duration `yaml:"timeout_shutdown"`
-	Concurrency     int
-	Metadata        bool
+	LogLevel          string `yaml:"log_level"`
+	Timeout           time.Duration
+	TimeoutShutdown   time.Duration `yaml:"timeout_shutdown"`
+	Concurrency       int
+	Metadata          bool
+	LogResponseErrors bool `yaml:"log_response_errors"`
 
 	Auth struct {
 		Egress struct {
