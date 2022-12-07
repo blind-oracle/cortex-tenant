@@ -173,7 +173,9 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		}
 
 		if r.code < 200 || r.code >= 300 {
-			p.Errorf("src=%s req_id=%s HTTP code %d (%s)", clientIP, reqID, r.code, string(r.body))
+			if p.cfg.LogResponseErrors {
+				p.Errorf("src=%s req_id=%s HTTP code %d (%s)", clientIP, reqID, r.code, string(r.body))
+			}
 		}
 
 		if r.code > code {
