@@ -1,6 +1,6 @@
 module github.com/blind-oracle/cortex-tenant
 
-go 1.15
+go 1.19
 
 require (
 	github.com/andybalholm/brotli v1.0.1 // indirect
