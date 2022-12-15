@@ -2,6 +2,7 @@ listen: 0.0.0.0:8080
 listen_pprof: 0.0.0.0:7008
 
 target: http://127.0.0.1:9091/receive
+support_ipv6: false
 
 auth:
   egress:

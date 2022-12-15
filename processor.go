@@ -65,6 +65,7 @@ func newProcessor(c config) *processor {
 		WriteTimeout:       c.Timeout,
 		MaxConnWaitTimeout: 1 * time.Second,
 		MaxConnsPerHost:    64,
+		DialDualStack:      c.SupportIPv6,
 	}
 
 	if c.Auth.Egress.Username != "" {
