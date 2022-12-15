@@ -46,6 +46,8 @@ listen: 0.0.0.0:8080
 listen_pprof: 0.0.0.0:7008
 # Where to send the modified requests (Cortex)
 target: http://127.0.0.1:9091/receive
+# Whether to enable querying for IPv6 records
+enable_ipv6: false
 
 # Authentication
 auth:

@@ -14,8 +14,8 @@ type config struct {
 	Listen      string
 	ListenPprof string `yaml:"listen_pprof"`
 
-	Target      string
-	SupportIPv6 bool `yaml:"support_ipv6"`
+	Target     string
+	EnableIPv6 bool `yaml:"enable_ipv6"`
 
 	LogLevel          string `yaml:"log_level"`
 	Timeout           time.Duration
