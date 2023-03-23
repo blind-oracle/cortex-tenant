@@ -1,6 +1,6 @@
 module github.com/blind-oracle/cortex-tenant
 
-go 1.19
+go 1.20
 
 require (
 	github.com/blind-oracle/go-common v1.0.7
@@ -9,22 +9,22 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/common v0.39.0
-	github.com/prometheus/prometheus v0.41.0
+	github.com/prometheus/common v0.42.0
+	github.com/prometheus/prometheus v0.43.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.1
-	github.com/valyala/fasthttp v1.43.0
+	github.com/stretchr/testify v1.8.2
+	github.com/valyala/fasthttp v1.45.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
-	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/klauspost/compress v1.15.13 // indirect
+	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
