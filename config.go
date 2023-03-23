@@ -23,6 +23,7 @@ type config struct {
 	Concurrency       int
 	Metadata          bool
 	LogResponseErrors bool `yaml:"log_response_errors"`
+	MaxConnDuration   time.Duration `yaml:"max_connection_duration"`
 
 	Auth struct {
 		Egress struct {
