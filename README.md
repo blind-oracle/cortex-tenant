@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/blind-oracle/cortex-tenant/badge.svg?branch=main)](https://coveralls.io/github/blind-oracle/cortex-tenant?branch=main)
 [![Build Status](https://www.travis-ci.com/blind-oracle/cortex-tenant.svg?branch=main)](https://www.travis-ci.com/blind-oracle/cortex-tenant)
 
-Prometheus remote write proxy which marks timeseries with a Cortex tenant ID based on labels.
+Prometheus remote write proxy which marks timeseries with a Cortex/Mimir tenant ID based on labels.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ Prometheus remote write proxy which marks timeseries with a Cortex tenant ID bas
 
 ## Overview
 
-Cortex tenants (separate namespaces where metrics are stored to and queried from) are identified by `X-Scope-OrgID` HTTP header on both writes and queries.
+Cortex/Mimir tenants (separate namespaces where metrics are stored to and queried from) are identified by `X-Scope-OrgID` HTTP header on both writes and queries.
 
 ~~Problem is that Prometheus can't be configured to send this header~~ Actually in some recent version (year 2021 onwards) this functionality was added, but the tenant is the same for all jobs. This makes it impossible to use a single Prometheus (or an HA pair) to write to multiple tenants.
 
@@ -24,7 +24,7 @@ This software solves the problem using the following logic:
   If none is configured then the write request will be rejected with HTTP code 400
 - Optionally removes this label from the timeseries
 - Groups timeseries by tenant
-- Issues a number of parallel per-tenant HTTP requests to Cortex with the relevant tenant HTTP header (`X-Scope-OrgID` by default)
+- Issues a number of parallel per-tenant HTTP requests to Cortex/Mimir with the relevant tenant HTTP header (`X-Scope-OrgID` by default)
 
 ## Usage
 
@@ -46,13 +46,13 @@ listen: 0.0.0.0:8080
 # Profiling API, remove to disable
 listen_pprof: 0.0.0.0:7008
 
-# Where to send the modified requests (Cortex)
+# Where to send the modified requests (Cortex/Mimir)
 target: http://127.0.0.1:9091/receive
 
 # Whether to enable querying for IPv6 records
 enable_ipv6: false
 
-# Authentication
+# Authentication (optional)
 auth:
   # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
   egress:
@@ -73,17 +73,17 @@ timeout_shutdown: 10s
 # Max number of parallel incoming HTTP requests to handle
 concurrency: 10
 
-# Whether to forward metrics metadata from Prometheus to Cortex
+# Whether to forward metrics metadata from Prometheus to Cortex/Mimir
 # Since metadata requests have no timeseries in them - we cannot divide them into tenants
 # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
 metadata: false
 
 # If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
 # which can be quite verbose like 400 code - out-of-order samples or 429 on hitting ingestion limits
-# Also, those are already reported by other services like Cortex / Mimir distributors and ingesters
+# Also, those are already reported by other services like Cortex/Mimir distributors and ingesters
 log_response_errors: true
 
-# Maximum duration to keep outgoing connections alive (to Cortex)
+# Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
 # Useful for resetting L4 load-balancer state
 # Use 0 to keep them indefinitely
 max_connection_duration: 0s
@@ -91,20 +91,20 @@ max_connection_duration: 0s
 tenant:
   # Which label to look for the tenant information
   label: tenant
-  
+
   # Whether to remove the tenant label from the request
   label_remove: true
   
   # To which header to add the tenant ID
   header: X-Scope-OrgID
-  
+
   # Which tenant ID to use if the label is missing in any of the timeseries
   # If this is not set or empty then the write request with missing tenant label
   # will be rejected with HTTP code 400
   default: foobar
-  
+
   # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
-  # regardless of the response from Cortex. This can lose metrics if Cortex is
+  # regardless of the response from upstream. This can lose metrics if Cortex/Mimir is
   # throwing rejections.
   accept_all: false
 ```
@@ -134,7 +134,7 @@ scrape_configs:
           tenant: deadbeef
 ```
 
-This would result in `job1` metrics ending up in the `foobar` tenant in cortex and `job2` in `deadbeef`.
+This would result in `job1` metrics ending up in the `foobar` tenant in Cortex/Mimir and `job2` in `deadbeef`.
 
 ## Building
 
