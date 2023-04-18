@@ -1,3 +1,7 @@
+# cortex-tenant-ns-label
+
+This is a fork of [cortex-tenant](https://github.com/blind-oracle/cortex-tenant). It adds functionality to fetch the tenant from a K8s namespace annotation.
+
 # cortex-tenant
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/blind-oracle/cortex-tenant)](https://goreportcard.com/report/github.com/blind-oracle/cortex-tenant)
