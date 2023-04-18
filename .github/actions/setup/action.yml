@@ -1,0 +1,18 @@
+env:
+  KUBECONFIG: /tmp/github-ci.kubeconfig
+inputs:
+  KUBECONFIG_DATA:
+    required: true
+  REGISTRY:
+    required: true
+name: Environment Setup
+runs:
+  steps:
+  - run: "echo -n '${{ inputs.KUBECONFIG_DATA }}' > \"${KUBECONFIG}\""
+    shell: bash
+  - run: |
+      echo "NAMESPACE=$(yq '.contexts.0.context.namespace' ${KUBECONFIG})" >> $GITHUB_ENV
+      echo "CI_COMMIT_REF_SLUG=$(echo '${{ github.ref_name }}' | sed -e 's/.*/\L&/' -e 's/[^a-z0-9]/-/g' -e 's/^[0-9-]*//' -e 's/-*$//' -e 's/-\+/-/g')" >> $GITHUB_ENV
+      echo "CI_PROJECT_NAME=$(echo '${{ github.repository }}' | sed -e 's/^[^\/]\+\///')" >> $GITHUB_ENV
+    shell: bash
+  using: composite

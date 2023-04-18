@@ -1,0 +1,17 @@
+env:
+  KUBECONFIG: /tmp/github-ci.kubeconfig
+inputs:
+  REGISTRY:
+    required: true
+name: Build
+runs:
+  steps:
+  - run: "yq '.users.0.user.token' \"${KUBECONFIG}\" | docker login -u appflow-deployer --password-stdin '${{ inputs.REGISTRY }}'"
+    shell: bash
+  - uses: docker/setup-buildx-action@v2
+  - uses: docker/build-push-action@v4
+    with:
+      provenance: false
+      push: true
+      tags: "${{ inputs.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.CI_PROJECT_NAME }}:${{ env.CI_COMMIT_REF_SLUG }}"
+  using: composite

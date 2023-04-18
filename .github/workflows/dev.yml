@@ -1,0 +1,32 @@
+env:
+  KUBECONFIG: /tmp/github-ci.kubeconfig
+  REGISTRY: registry.lab-cloudscale-rma-0.appuio.cloud
+  TEST_DOMAIN: apps.lab-cloudscale-rma-0.appuio.cloud
+jobs:
+  build:
+    environment: dev
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/actions/setup
+      with:
+        KUBECONFIG_DATA: "${{ secrets.KUBECONFIG_DEV }}"
+    - uses: ./.github/actions/build
+      with:
+        REGISTRY: "${{ env.REGISTRY }}"
+    - env:
+        NEWLINE: |2+
+
+      name: Generate Deployment
+      run: |
+        jq -r 'to_entries | map("\(.key)=\(.value|tostring|tojson)") | .[]' > .composeenv <<'EOF' ${{ env.NEWLINE }}${{ toJson(secrets) }}${{ env.NEWLINE }}EOF
+        docker run -v "${PWD}:/data" -w /data --env-file <(env) ghcr.io/vshn/k8ify-appcat:latest /bin/k8ify dev ${CI_COMMIT_REF_SLUG} --shell-env-file .composeenv --modified-image '${{ env.NAMESPACE }}/${{ env.CI_PROJECT_NAME }}:${{ env.CI_COMMIT_REF_SLUG }}'
+        rm .composeenv
+        kubectl diff -f manifests/ || true
+    - name: Deploy
+      run: kubectl apply -f manifests/ || true
+name: Build and deploy to dev
+"on":
+  push:
+    branches:
+    - '**'
