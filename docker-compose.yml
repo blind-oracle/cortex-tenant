@@ -5,9 +5,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - config=$CONFIG
+      - CONFIG=$CONFIG
     deploy:
       resources:
         reservations:
           cpus: "0.01"
           memory: 256M
+    labels:
+      k8ify.serviceAccountName: cortex-tenant-ns-label

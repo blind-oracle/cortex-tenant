@@ -14,9 +14,10 @@ all: rpm deb
 
 build:
 	go test ./... && \
+	CGO_ENABLED=0 \
 	GOARCH=amd64 \
 	GOOS=linux \
-	$(GO) build -ldflags "-s -w -extldflags \"-static\" -X main.version=$(VERSION)"
+	$(GO) build -a -tags netgo -ldflags '-s -w -extldflags "-static" -X main.version=$(VERSION)'
 
 prepare:
 	cd deploy && \

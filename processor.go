@@ -38,12 +38,17 @@ type processor struct {
 	auth struct {
 		egressHeader []byte
 	}
+
+	TenantLookup atomic.Pointer[map[string]string]
 }
 
-func newProcessor(c config) *processor {
+func newProcessor(c config, tenantLookup map[string]string) *processor {
+	tenantLookupPointer := atomic.Pointer[map[string]string]{}
+	tenantLookupPointer.Store(&tenantLookup)
 	p := &processor{
-		cfg:    c,
-		Logger: logger.NewSimpleLogger("proc"),
+		cfg:          c,
+		Logger:       logger.NewSimpleLogger("proc"),
+		TenantLookup: tenantLookupPointer,
 	}
 
 	p.srv = &fh.Server{
@@ -98,6 +103,13 @@ func (p *processor) run() (err error) {
 
 	go p.srv.Serve(l)
 	return
+}
+
+func (p *processor) tenantLookup(namespace string) string {
+	if tenant, found := (*p.TenantLookup.Load())[namespace]; found {
+		return tenant
+	}
+	return p.cfg.Tenant.Default
 }
 
 func (p *processor) handle(ctx *fh.RequestCtx) {
@@ -201,9 +213,9 @@ func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[strin
 	m := map[string]*prompb.WriteRequest{}
 
 	for _, ts := range wrReqIn.Timeseries {
-		tenant, err := p.processTimeseries(&ts)
-		if err != nil {
-			return nil, err
+		tenant := p.processTimeseries(&ts)
+		if tenant == "" {
+			continue
 		}
 
 		wrReqOut, ok := m[tenant]
@@ -267,30 +279,13 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*p
 	return
 }
 
-func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err error) {
-	idx := 0
-	for i, l := range ts.Labels {
-		if l.Name == p.cfg.Tenant.Label {
-			tenant, idx = l.Value, i
-			break
+func (p *processor) processTimeseries(ts *prompb.TimeSeries) string {
+	for _, l := range ts.Labels {
+		if l.Name == "namespace" {
+			return p.tenantLookup(l.Value)
 		}
 	}
-
-	if tenant == "" {
-		if p.cfg.Tenant.Default == "" {
-			return "", fmt.Errorf("label '%s' not found", p.cfg.Tenant.Label)
-		}
-
-		return p.cfg.Tenant.Default, nil
-	}
-
-	if p.cfg.Tenant.LabelRemove {
-		l := len(ts.Labels)
-		ts.Labels[idx] = ts.Labels[l-1]
-		ts.Labels = ts.Labels[:l-1]
-	}
-
-	return
+	return p.cfg.Tenant.Default
 }
 
 func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
