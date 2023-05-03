@@ -29,7 +29,7 @@ data:
     tenant:
       # Which label to look for the tenant information
       label: tenant
-      # 
+      # Optional hard-coded prefix for all tenant values, added with "-" delimiter.
       tenant_prefix: ""
       # Whether to remove the tenant label from the request
       label_remove: false
