@@ -22,7 +22,7 @@ type config struct {
 	TimeoutShutdown   time.Duration `yaml:"timeout_shutdown"`
 	Concurrency       int
 	Metadata          bool
-	LogResponseErrors bool `yaml:"log_response_errors"`
+	LogResponseErrors bool          `yaml:"log_response_errors"`
 	MaxConnDuration   time.Duration `yaml:"max_connection_duration"`
 
 	Auth struct {
@@ -33,11 +33,16 @@ type config struct {
 	}
 
 	Tenant struct {
-		Label       string
-		LabelRemove bool `yaml:"label_remove"`
-		Header      string
-		Default     string
-		AcceptAll   bool `yaml:"accept_all"`
+		Header    string
+		Default   string
+		AcceptAll bool `yaml:"accept_all"`
+	}
+
+	Namespace struct {
+		K8sApi      string `yaml:"k8s_api"`
+		K8sToken    string `yaml:"k8s_token"`
+		TenantLabel string `yaml:"tenant_label"`
+		Refresh     time.Duration
 	}
 
 	pipeIn  *fhu.InmemoryListener
@@ -62,8 +67,12 @@ func configParse(b []byte) (*config, error) {
 		cfg.Tenant.Header = "X-Scope-OrgID"
 	}
 
-	if cfg.Tenant.Label == "" {
-		cfg.Tenant.Label = "__tenant__"
+	if cfg.Namespace.TenantLabel == "" {
+		cfg.Namespace.TenantLabel = "__tenant__"
+	}
+
+	if cfg.Namespace.Refresh == 0 {
+		cfg.Namespace.Refresh = 60 * time.Second
 	}
 
 	if cfg.Auth.Egress.Username != "" {

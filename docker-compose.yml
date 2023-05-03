@@ -1,0 +1,15 @@
+version: '3.4'
+services:
+  cortex-tenant-ns-label:
+    image: image-registry.openshift-image-registry.svc:5000/$NAMESPACE/$CI_PROJECT_NAME:$CI_COMMIT_REF_SLUG
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG=$CONFIG
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.01"
+          memory: 256M
+    labels:
+      k8ify.serviceAccountName: cortex-tenant-ns-label
