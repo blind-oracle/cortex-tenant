@@ -107,6 +107,11 @@ tenant:
   # regardless of the response from upstream. This can lose metrics if Cortex/Mimir is
   # throwing rejections.
   accept_all: false
+
+  # Optional hard-coded prefix with delimeter for all tenant values.
+  # Delimeters allowed for use:
+  # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+  prefix: foobar-
 ```
 
 ### Prometheus configuration example

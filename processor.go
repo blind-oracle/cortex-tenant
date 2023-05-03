@@ -307,13 +307,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 		return
 	}
 
-	req.Header.SetMethod("POST")
-	req.Header.Set("Content-Encoding", "snappy")
-	req.Header.Set("Content-Type", "application/x-protobuf")
-	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
-	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
-	req.Header.Set(p.cfg.Tenant.Header, tenant)
+	p.fillRequestHeaders(clientIP, reqID, tenant, req)
 
 	if p.auth.egressHeader != nil {
 		req.Header.SetBytesV("Authorization", p.auth.egressHeader)
@@ -331,6 +325,19 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	copy(body, resp.Body())
 
 	return
+}
+
+func (p *processor) fillRequestHeaders(
+	clientIP net.Addr, reqID uuid.UUID, tenant string, req *fh.Request) {
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
+	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
+	if p.cfg.Tenant.Prefix != "" {
+		tenant = p.cfg.Tenant.Prefix + tenant
+	}
+	req.Header.Set(p.cfg.Tenant.Header, tenant)
 }
 
 func (p *processor) close() (err error) {

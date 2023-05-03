@@ -29,6 +29,10 @@ data:
     tenant:
       # Which label to look for the tenant information
       label: tenant
+      # Optional hard-coded prefix with delimeter for all tenant values.
+      # Delimeters allowed for use:
+      # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+      prefix: ""
       # Whether to remove the tenant label from the request
       label_remove: false
       # To which header to add the tenant ID
