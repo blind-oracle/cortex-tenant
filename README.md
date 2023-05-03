@@ -92,9 +92,6 @@ tenant:
   # Which label to look for the tenant information
   label: tenant
 
-  # 
-  label_prefix: foobar
-
   # Whether to remove the tenant label from the request
   label_remove: true
   
@@ -110,6 +107,9 @@ tenant:
   # regardless of the response from upstream. This can lose metrics if Cortex/Mimir is
   # throwing rejections.
   accept_all: false
+
+  # Optional hard-coded prefix for all tenant values, added with "-" delimiter.
+  tenant_prefix: foobar
 ```
 
 ### Prometheus configuration example

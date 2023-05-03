@@ -37,7 +37,7 @@ timeout: 50ms
 timeout_shutdown: 100ms
 
 tenant:
-  label_prefix: foobar
+  tenant_prefix: foobar
   label_remove: false
   default: default
 `

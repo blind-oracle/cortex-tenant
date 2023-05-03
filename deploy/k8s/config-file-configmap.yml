@@ -30,7 +30,7 @@ data:
       # Which label to look for the tenant information
       label: tenant
       # 
-      label_prefix: ""
+      tenant_prefix: ""
       # Whether to remove the tenant label from the request
       label_remove: false
       # To which header to add the tenant ID
