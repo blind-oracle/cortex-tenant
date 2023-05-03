@@ -92,6 +92,9 @@ tenant:
   # Which label to look for the tenant information
   label: tenant
 
+  # 
+  label_prefix: foobar
+
   # Whether to remove the tenant label from the request
   label_remove: true
   

@@ -28,6 +28,19 @@ tenant:
   label_remove: false
   default: default
 `
+	testConfigWithValues = `listen: 0.0.0.0:8080
+listen_pprof: 0.0.0.0:7008
+
+target: http://127.0.0.1:9091/receive
+log_level: debug
+timeout: 50ms
+timeout_shutdown: 100ms
+
+tenant:
+  label_prefix: foobar
+  label_remove: false
+  default: default
+`
 )
 
 var (
@@ -151,6 +164,27 @@ func Test_config(t *testing.T) {
 	cfg, err := configLoad("config.yml")
 	assert.Nil(t, err)
 	assert.Equal(t, 10, cfg.Concurrency)
+}
+
+// Check if LabelPrefix empty by default
+func Test_config_is_prefix_empty_by_default(t *testing.T) {
+	cfg, err := configLoad("config.yml")
+	assert.Nil(t, err)
+	assert.Equal(t, "", cfg.Tenant.LabelPrefix)
+}
+
+// Check if LabelPrefix empty by default
+func Test_config_is_prefix_empty_if_not_set(t *testing.T) {
+	cfg, err := configParse([]byte(testConfig))
+	assert.Nil(t, err)
+	assert.Equal(t, "", cfg.Tenant.LabelPrefix)
+}
+
+// Check if LabelPrefix filled with value
+func Test_config_is_prefix_filled(t *testing.T) {
+	cfg, err := configParse([]byte(testConfigWithValues))
+	assert.Nil(t, err)
+	assert.Equal(t, "foobar", cfg.Tenant.LabelPrefix)
 }
 
 func Test_handle(t *testing.T) {

@@ -34,6 +34,7 @@ type config struct {
 
 	Tenant struct {
 		Label       string
+		LabelPrefix string `yaml:"label_prefix"`
 		LabelRemove bool `yaml:"label_remove"`
 		Header      string
 		Default     string

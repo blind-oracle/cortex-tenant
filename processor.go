@@ -313,6 +313,9 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
 	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
+	if p.cfg.Tenant.LabelPrefix != "" {
+		tenant = fmt.Sprintf("%s-%s", p.cfg.Tenant.LabelPrefix, tenant)
+	}
 	req.Header.Set(p.cfg.Tenant.Header, tenant)
 
 	if p.auth.egressHeader != nil {
