@@ -22,7 +22,7 @@ type config struct {
 	TimeoutShutdown   time.Duration `yaml:"timeout_shutdown"`
 	Concurrency       int
 	Metadata          bool
-	LogResponseErrors bool `yaml:"log_response_errors"`
+	LogResponseErrors bool          `yaml:"log_response_errors"`
 	MaxConnDuration   time.Duration `yaml:"max_connection_duration"`
 
 	Auth struct {
@@ -34,8 +34,8 @@ type config struct {
 
 	Tenant struct {
 		Label       string
-		Prefix 		string `yaml:"prefix"`
-		LabelRemove bool `yaml:"label_remove"`
+		Prefix      string `yaml:"prefix"`
+		LabelRemove bool   `yaml:"label_remove"`
 		Header      string
 		Default     string
 		AcceptAll   bool `yaml:"accept_all"`
