@@ -8,6 +8,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/google/uuid"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 
@@ -37,7 +38,7 @@ timeout: 50ms
 timeout_shutdown: 100ms
 
 tenant:
-  tenant_prefix: foobar
+  prefix: foobar-
   label_remove: false
   default: default
 `
@@ -166,25 +167,54 @@ func Test_config(t *testing.T) {
 	assert.Equal(t, 10, cfg.Concurrency)
 }
 
-// Check if LabelPrefix empty by default
+// Check if Prefix empty by default
 func Test_config_is_prefix_empty_by_default(t *testing.T) {
 	cfg, err := configLoad("config.yml")
 	assert.Nil(t, err)
-	assert.Equal(t, "", cfg.Tenant.LabelPrefix)
+	assert.Equal(t, "", cfg.Tenant.Prefix)
 }
 
-// Check if LabelPrefix empty by default
+// Check if Prefix empty by default
 func Test_config_is_prefix_empty_if_not_set(t *testing.T) {
 	cfg, err := configParse([]byte(testConfig))
 	assert.Nil(t, err)
-	assert.Equal(t, "", cfg.Tenant.LabelPrefix)
+	assert.Equal(t, "", cfg.Tenant.Prefix)
 }
 
-// Check if LabelPrefix filled with value
+// Check if Prefix filled with value
 func Test_config_is_prefix_filled(t *testing.T) {
 	cfg, err := configParse([]byte(testConfigWithValues))
 	assert.Nil(t, err)
-	assert.Equal(t, "foobar", cfg.Tenant.LabelPrefix)
+	assert.Equal(t, "foobar-", cfg.Tenant.Prefix)
+}
+
+func Test_request_headers(t *testing.T) {
+	cfg, err := configParse([]byte(testConfig))
+	assert.Nil(t, err)
+
+	p := newProcessor(*cfg)
+
+	req := fh.AcquireRequest()
+	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
+	reqID, _ := uuid.NewRandom()
+	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
+
+	assert.Equal(t, "snappy", string(req.Header.Peek("Content-Encoding")))
+	assert.Equal(t, "my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
+}
+
+func Test_request_headers_with_prefix(t *testing.T) {
+	cfg, err := configParse([]byte(testConfigWithValues))
+	assert.Nil(t, err)
+
+	p := newProcessor(*cfg)
+
+	req := fh.AcquireRequest()
+	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
+	reqID, _ := uuid.NewRandom()
+	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
+
+	assert.Equal(t, "foobar-my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
 }
 
 func Test_handle(t *testing.T) {
