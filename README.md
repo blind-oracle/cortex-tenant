@@ -108,8 +108,8 @@ tenant:
   # throwing rejections.
   accept_all: false
 
-  # Optional hard-coded prefix with delimeter for all tenant values.
-  # Delimeters allowed for use:
+  # Optional prefix to be added to a tenant header before sending it to Cortex/Mimir.
+  # Make sure to use only allowed characters:
   # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
   prefix: foobar-
 ```
