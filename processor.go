@@ -314,6 +314,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	}
 
 	req.SetRequestURI(p.cfg.Target)
+	req.Header.SetMethod("POST")
 	req.SetBody(buf)
 
 	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
