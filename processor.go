@@ -313,6 +313,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 		req.Header.SetBytesV("Authorization", p.auth.egressHeader)
 	}
 
+	req.Header.SetMethod(fh.MethodPost)
 	req.SetRequestURI(p.cfg.Target)
 	req.SetBody(buf)
 

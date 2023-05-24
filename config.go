@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -77,7 +77,7 @@ func configParse(b []byte) (*config, error) {
 }
 
 func configLoad(file string) (*config, error) {
-	y, err := ioutil.ReadFile(file)
+	y, err := os.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to read config")
 	}
