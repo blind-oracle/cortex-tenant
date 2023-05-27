@@ -37,7 +37,10 @@ This software solves the problem using the following logic:
 
 ### Configuration
 
-Application expects the config file at `/etc/cortex-tenant.yml` by default.
+The service can be configured by a config file and/or environment variables. Config file may be specified by passing `-config` CLI argument.
+
+If both are used then the env vars have precedence (i.e. they override values from config).
+See below for config file format and corresponding env vars.
 
 ```yaml
 # Where to listen for incoming write requests from Prometheus
