@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 	"os/signal"
@@ -20,10 +21,6 @@ func main() {
 	cfgFile := flag.String("config", "", "Path to a config file")
 	flag.Parse()
 
-	if *cfgFile == "" {
-		log.Fatalf("Config file required")
-	}
-
 	cfg, err := configLoad(*cfgFile)
 	if err != nil {
 		log.Fatal(err)
@@ -37,14 +34,15 @@ func main() {
 		}()
 	}
 
-	if cfg.LogLevel != "" {
-		lvl, err := log.ParseLevel(cfg.LogLevel)
-		if err != nil {
-			log.Fatalf("Unable to parse log level: %s", err)
-		}
-
-		log.SetLevel(lvl)
+	lvl, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatalf("Unable to parse log level: %s", err)
 	}
+
+	log.SetLevel(lvl)
+
+	cfgJSON, _ := json.Marshal(cfg)
+	log.Warnf("Effective config: %+v", string(cfgJSON))
 
 	proc := newProcessor(*cfg)
 

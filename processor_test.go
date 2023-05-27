@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -132,8 +133,26 @@ var (
 	}
 )
 
+func getConfig(contents string) (*config, error) {
+	err := os.WriteFile("config_test.yml", []byte(contents), 0o666)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := configLoad("config_test.yml")
+	if err != nil {
+		return nil, err
+	}
+
+	if err = os.Remove("config_test.yml"); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
 func createProcessor() (*processor, error) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -176,20 +195,20 @@ func Test_config_is_prefix_empty_by_default(t *testing.T) {
 
 // Check if Prefix empty by default
 func Test_config_is_prefix_empty_if_not_set(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 	assert.Equal(t, "", cfg.Tenant.Prefix)
 }
 
 // Check if Prefix filled with value
 func Test_config_is_prefix_filled(t *testing.T) {
-	cfg, err := configParse([]byte(testConfigWithValues))
+	cfg, err := getConfig(testConfigWithValues)
 	assert.Nil(t, err)
 	assert.Equal(t, "foobar-", cfg.Tenant.Prefix)
 }
 
 func Test_request_headers(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 
 	p := newProcessor(*cfg)
@@ -204,7 +223,7 @@ func Test_request_headers(t *testing.T) {
 }
 
 func Test_request_headers_with_prefix(t *testing.T) {
-	cfg, err := configParse([]byte(testConfigWithValues))
+	cfg, err := getConfig(testConfigWithValues)
 	assert.Nil(t, err)
 
 	p := newProcessor(*cfg)
@@ -218,7 +237,7 @@ func Test_request_headers_with_prefix(t *testing.T) {
 }
 
 func Test_handle(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 
 	cfg.pipeIn = fhu.NewInmemoryListener()
@@ -363,7 +382,7 @@ func Test_handle(t *testing.T) {
 }
 
 func Test_processTimeseries(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 	cfg.Tenant.LabelRemove = true
 
