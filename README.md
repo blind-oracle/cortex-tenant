@@ -41,76 +41,95 @@ Application expects the config file at `/etc/cortex-tenant.yml` by default.
 
 ```yaml
 # Where to listen for incoming write requests from Prometheus
+# env: CT_LISTEN
 listen: 0.0.0.0:8080
 
 # Profiling API, remove to disable
+# env: CT_LISTEN_PPROF
 listen_pprof: 0.0.0.0:7008
 
 # Where to send the modified requests (Cortex/Mimir)
+# env: CT_TARGET
 target: http://127.0.0.1:9091/receive
 
 # Whether to enable querying for IPv6 records
+# env: CT_ENABLE_IPV6
 enable_ipv6: false
 
 # Authentication (optional)
 auth:
   # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
   egress:
+    # env: CT_AUTH_EGRESS_USERNAME
     username: foo
+    # env: CT_AUTH_EGRESS_PASSWORD
     password: bar
 
 # Log level
+# env: CT_LOG_LEVEL
 log_level: warn
 
 # HTTP request timeout
+# env: CT_TIMEOUT
 timeout: 10s
 
 # Timeout to wait on shutdown to allow load balancers detect that we're going away.
 # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
 # Set to 0s to disable.
+# env: CT_TIMEOUT_SHUTDOWN
 timeout_shutdown: 10s
 
 # Max number of parallel incoming HTTP requests to handle
+# env: CT_CONCURRENCY
 concurrency: 10
 
 # Whether to forward metrics metadata from Prometheus to Cortex/Mimir
 # Since metadata requests have no timeseries in them - we cannot divide them into tenants
 # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
+# env: CT_METADATA
 metadata: false
 
 # If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
 # which can be quite verbose like 400 code - out-of-order samples or 429 on hitting ingestion limits
 # Also, those are already reported by other services like Cortex/Mimir distributors and ingesters
+# env: CT_LOG_RESPONSE_ERRORS
 log_response_errors: true
 
 # Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
 # Useful for resetting L4 load-balancer state
 # Use 0 to keep them indefinitely
+# env: CT_MAX_CONN_DURATION
 max_connection_duration: 0s
 
 tenant:
   # Which label to look for the tenant information
+  # env: CT_TENANT_LABEL
   label: tenant
 
   # Whether to remove the tenant label from the request
+  # env: CT_TENANT_LABEL_REMOVE
   label_remove: true
   
   # To which header to add the tenant ID
+  # env: CT_TENANT_HEADER
   header: X-Scope-OrgID
 
   # Which tenant ID to use if the label is missing in any of the timeseries
   # If this is not set or empty then the write request with missing tenant label
   # will be rejected with HTTP code 400
+  # env: CT_TENANT_DEFAULT
   default: foobar
 
   # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
   # regardless of the response from upstream. This can lose metrics if Cortex/Mimir is
   # throwing rejections.
+  # env: CT_TENANT_ACCEPT_ALL
   accept_all: false
 
   # Optional prefix to be added to a tenant header before sending it to Cortex/Mimir.
   # Make sure to use only allowed characters:
   # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+  # env: CT_TENANT_PREFIX
   prefix: foobar-
 ```
 
