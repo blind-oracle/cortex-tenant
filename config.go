@@ -36,7 +36,7 @@ type config struct {
 	Tenant struct {
 		Label       string `env:"CT_TENANT_LABEL"`
 		Prefix      string `yaml:"prefix" env:"CT_TENANT_PREFIX"`
-		LabelRemove bool   `yaml:"label_remove" env:"CT_TENANT_LABEL"`
+		LabelRemove bool   `yaml:"label_remove" env:"CT_TENANT_LABEL_REMOVE"`
 		Header      string `env:"CT_TENANT_HEADER"`
 		Default     string `env:"CT_TENANT_DEFAULT"`
 		AcceptAll   bool   `yaml:"accept_all" env:"CT_TENANT_ACCEPT_ALL"`
