@@ -190,10 +190,21 @@ ADD my-config.yml /data/cortex-tenant.yml
 
 ### Deploy on Kubernetes
 
-`deploy/k8s` directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
+#### Using manifests
+
+`deploy/k8s/manifests` directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
 
 ```bash
-kubectl apply -f deploy/k8s/cortex-tenant-deployment.yaml
-kubectl apply -f deploy/k8s/cortex-tenant-service.yaml
-kubectl apply -f deploy/k8s/config-file-configmap.yml
+kubectl apply -f deploy/k8s/manifests/cortex-tenant-deployment.yaml
+kubectl apply -f deploy/k8s/manifests/cortex-tenant-service.yaml
+kubectl apply -f deploy/k8s/manifests/config-file-configmap.yml
+```
+
+#### Using a Helm Chart
+
+`deploy/k8s/chart` directory contains a chart for deploying this on Kubernetes. You can use `deploy/k8s/chart/testing` directory to test the deployment using helmfile.
+
+```bash
+helmfile -f deploy/k8s/chart/testing/helmfile.yaml template
+helmfile -f deploy/k8s/chart/testing/helmfile.yaml apply
 ```
