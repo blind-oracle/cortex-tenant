@@ -1,0 +1,128 @@
+nameOverride:
+fullnameOverride:
+
+image:
+  repository: ghcr.io/blind-oracle/cortex-tenant # registry to pull
+  pullPolicy: IfNotPresent # policy when pulling images
+  tag: "" # Overrides the image tag (default is `.Chart.appVersion`)
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+autoscaling:
+  minReplica: 1 # Min number of pod replica autoscaled
+  maxReplica: 3 # Max number of pod replica autoscaled
+  targetMemoryAverageValue: 100Mi
+  targetCPUUtilizationPercentage: 50
+
+envs:
+
+config:
+  # Where to listen for incoming write requests from Prometheus
+  # env: CT_LISTEN
+  listen: 0.0.0.0:8080
+  # Profiling API, leave empty to disable
+  # env: CT_LISTEN_PPROF
+  listen_pprof: 0.0.0.0:7008
+  # Where to send the modified requests (Cortex)
+  # env: CT_TARGET
+  target: http://cortex-distributor.cortex.svc:8080/api/v1/push
+  # Whether to enable querying for IPv6 records
+  # env: CT_ENABLE_IPV6
+  enable_ipv6: false
+  # Log level
+  # env: CT_LOG_LEVEL
+  log_level: warn
+  # HTTP request timeout
+  # env: CT_TIMEOUT
+  timeout: 10s
+  # Timeout to wait on shutdown to allow load balancers detect that we're going away.
+  # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
+  # Set to 0s to disable.
+  # env: CT_TIMEOUT_SHUTDOWN
+  timeout_shutdown: 10s
+  # Max number of parallel incoming HTTP requests to handle
+  # env: CT_CONCURRENCY
+  concurrency: 1000
+  # Whether to forward metrics metadata from Prometheus to Cortex
+  # Since metadata requests have no timeseries in them - we cannot divide them into tenants
+  # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
+  # env: CT_METADATA
+  metadata: false
+  # If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
+  # which can be quite verbose like 400 code - out-of-order samples or 429 on hitting ingestion limits
+  # Also, those are already reported by other services like Cortex/Mimir distributors and ingesters
+  # env: CT_LOG_RESPONSE_ERRORS
+  log_response_errors: true
+  # Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
+  # Useful for resetting L4 load-balancer state
+  # Use 0 to keep them indefinitely
+  # env: CT_MAX_CONN_DURATION
+  max_connection_duration: 0s
+
+  # Authentication (optional)
+  auth:
+    # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
+    enabled: false
+    # env: CT_AUTH_EGRESS_USERNAME
+    # env: CT_AUTH_EGRESS_PASSWORD
+    username:
+    password:
+    # Secret should pass the CT_AUTH_EGRESS_USERNAME and CT_AUTH_EGRESS_PASSWORD env variables
+    existingSecret:
+
+  tenant:
+    # Which label to look for the tenant information
+    # env: CT_TENANT_LABEL
+    label: tenant
+    # Optional hard-coded prefix with delimeter for all tenant values.
+    # Delimeters allowed for use:
+    # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+    # env: CT_TENANT_PREFIX
+    prefix: ""
+    # Whether to remove the tenant label from the request
+    # env: CT_TENANT_LABEL_REMOVE
+    label_remove: false
+    # To which header to add the tenant ID
+    # env: CT_TENANT_HEADER
+    header: X-Scope-OrgID
+    # Which tenant ID to use if the label is missing in any of the timeseries
+    # If this is not set or empty then the write request with missing tenant label
+    # will be rejected with HTTP code 400
+    # env: CT_TENANT_DEFAULT
+    default: cortex-tenant-default
+    # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
+    # regardless of the response from Cortex. This can lose metrics if Cortex is
+    # throwing rejections.
+    # env: CT_TENANT_ACCEPT_ALL
+    accept_all: false
+
+resources: # Resource limits and requests for simu
+  limits:
+    # cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+podDisruptionBudget:
+  enabled: true # If Pod disruption must be enabled
+  minAvailable: 1 # Number of min pods that must remain available
+
+podAnnotations: {} # Annotations for pods
+
+podSecurityContext: # [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+  runAsNonRoot: true
+  runAsGroup: 1000
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext: {} # [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+
+nodeSelector: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
+
+tolerations: [] # [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
+
+affinity: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
