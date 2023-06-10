@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  cortex-tenant:
+  - apiVersion: v2
+    appVersion: 1.10.1
+    created: "2023-05-30T12:27:42.204467668+02:00"
+    description: A Helm Chart for cortex-tenant
+    digest: eabef3ad16e555543e32d9308994f76679e5fa54371cccd3957112f33a28a59e
+    name: cortex-tenant
+    type: application
+    urls:
+    - cortex-tenant-0.1.0.tgz
+    version: 0.1.0
+generated: "2023-05-30T12:27:42.203546177+02:00"
