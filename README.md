@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/blind-oracle/cortex-tenant)](https://goreportcard.com/report/github.com/blind-oracle/cortex-tenant)
 [![Coverage Status](https://coveralls.io/repos/github/blind-oracle/cortex-tenant/badge.svg?branch=main)](https://coveralls.io/github/blind-oracle/cortex-tenant?branch=main)
 [![Build Status](https://www.travis-ci.com/blind-oracle/cortex-tenant.svg?branch=main)](https://www.travis-ci.com/blind-oracle/cortex-tenant)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cortex-tenant)]([https://artifacthub.io/packages/search?repo=cortex-tenant](https://artifacthub.io/packages/helm/cortex-tenant/cortex-tenant))
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/cortex-tenant)](https://artifacthub.io/packages/helm/cortex-tenant/cortex-tenant)
 
 Prometheus remote write proxy which marks timeseries with a Cortex/Mimir tenant ID based on labels.
 
