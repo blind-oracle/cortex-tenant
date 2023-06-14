@@ -175,15 +175,14 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-				code, body, _, err := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
-				if err != nil {
+			    r := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
+			    if r.err != nil {
 					ctx.Error(err.Error(), fh.StatusInternalServerError)
-					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, err)
+					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
 					return
 				}
-
-				ctx.SetStatusCode(code)
-				ctx.SetBody(body)
+				ctx.SetStatusCode(r.code)
+				ctx.SetBody(r.body)
 			}
 
 			return
@@ -304,8 +303,7 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*p
 		go func(idx int, tenant string, wrReq *prompb.WriteRequest) {
 			defer wg.Done()
 
-			var r result
-			r.code, r.body, r.duration, r.err = p.send(clientIP, reqID, tenant, wrReq)
+			r := p.send(clientIP, reqID, tenant, wrReq)
 			res[idx] = r
 		}(i, tenant, wrReq)
 
@@ -342,7 +340,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 	return
 }
 
-func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, duration float64, err error) {
+func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (r result) {
 	start := time.Now()
 
 	req := fh.AcquireRequest()
@@ -355,6 +353,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 
 	buf, err := p.marshal(wr)
 	if err != nil {
+	    r.err = err
 		return
 	}
 
@@ -369,13 +368,14 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.SetBody(buf)
 
 	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
+	    r.err = err
 		return
 	}
 
-	duration = float64(time.Since(start).Milliseconds())
-	code = resp.Header.StatusCode()
-	body = make([]byte, len(resp.Body()))
-	copy(body, resp.Body())
+    r.code = resp.Header.StatusCode()
+    r.body = make([]byte, len(resp.Body()))
+    copy(r.body, resp.Body())
+    r.duration = float64(time.Since(start).Milliseconds())
 
 	return
 }
