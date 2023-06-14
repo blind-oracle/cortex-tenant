@@ -375,7 +375,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
     r.code = resp.Header.StatusCode()
     r.body = make([]byte, len(resp.Body()))
     copy(r.body, resp.Body())
-    r.duration = float64(time.Since(start).Milliseconds())
+    r.duration = time.Since(start).Seconds() / 1000
 
 	return
 }
