@@ -14,6 +14,7 @@ import (
 type config struct {
 	Listen      string `env:"CT_LISTEN"`
 	ListenPprof string `yaml:"listen_pprof" env:"CT_LISTEN_PPROF"`
+	ListenMetrics string `yaml:"listen_metrics" env:"CT_LISTEN_METRICS"`
 
 	Target     string `env:"CT_TARGET"`
 	EnableIPv6 bool   `yaml:"enable_ipv6" env:"CT_ENABLE_IPV6"`

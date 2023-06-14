@@ -1,5 +1,6 @@
 listen: 0.0.0.0:8080
 listen_pprof: 0.0.0.0:7008
+listen_metrics: 0.0.0.0:9090
 
 target: http://127.0.0.1:9091/receive
 enable_ipv6: false
