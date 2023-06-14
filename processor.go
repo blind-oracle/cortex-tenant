@@ -34,35 +34,36 @@ var (
 		Help:      "Size in bytes of timeseries batches received.",
 		Buckets:   []float64{0.5, 1, 10, 25, 100, 250, 500, 1000, 5000, 10000, 30000, 300000, 600000, 1800000, 3600000},
 	})
-	metricTimeseriesReceived = promauto.NewCounter(prometheus.CounterOpts{
+	metricTimeseriesReceived = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "cortex_tenant",
 		Name:      "timeseries_received",
 		Help:      "The total number of timeseries received.",
-	})
+	}, []string{"tenant"})
 	metricTimeseriesRequestDurationMilliseconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "cortex_tenant",
 		Name:      "timeseries_request_duration_milliseconds",
 		Help:      "HTTP write request duration for tenant-specific timeseries in milliseconds, filtered by response code.",
 		Buckets:   []float64{0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 1800000, 3600000},
 	},
-		[]string{"code"},
+		[]string{"code", "tenant"},
 	)
-	metricTimeseriesRequestErrors = promauto.NewCounter(prometheus.CounterOpts{
+	metricTimeseriesRequestErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "cortex_tenant",
 		Name:      "timeseries_request_errors",
 		Help:      "The total number of tenant-specific timeseries writes that yielded errors.",
-	})
-	metricTimeseriesRequests = promauto.NewCounter(prometheus.CounterOpts{
+	}, []string{"tenant"})
+	metricTimeseriesRequests = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "cortex_tenant",
 		Name:      "timeseries_requests",
 		Help:      "The total number of tenant-specific timeseries writes.",
-	})
+	}, []string{"tenant"})
 )
 
 type result struct {
 	code     int
 	body     []byte
 	duration float64
+	tenant   string
 	err      error
 }
 
@@ -175,8 +176,8 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-			    r := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
-			    if r.err != nil {
+				r := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
+				if r.err != nil {
 					ctx.Error(err.Error(), fh.StatusInternalServerError)
 					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
 					return
@@ -198,6 +199,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	metricTenant := ""
 	var errs *me.Error
 	results := p.dispatch(clientIP, reqID, m)
 
@@ -210,10 +212,14 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	for _, r := range results {
-		metricTimeseriesRequests.Inc()
+		if p.cfg.ListenMetricsIncludeTenant {
+			metricTenant = r.tenant
+		}
+
+		metricTimeseriesRequests.WithLabelValues(metricTenant).Inc()
 
 		if r.err != nil {
-			metricTimeseriesRequestErrors.Inc()
+			metricTimeseriesRequestErrors.WithLabelValues(metricTenant).Inc()
 			errs = me.Append(errs, r.err)
 			p.Errorf("src=%s %s", clientIP, r.err)
 			continue
@@ -229,7 +235,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 			code, body = r.code, r.body
 		}
 
-		metricTimeseriesRequestDurationMilliseconds.WithLabelValues(strconv.Itoa(r.code)).Observe(r.duration)
+		metricTimeseriesRequestDurationMilliseconds.WithLabelValues(strconv.Itoa(r.code), metricTenant).Observe(r.duration)
 	}
 
 	if errs.ErrorOrNil() != nil {
@@ -248,10 +254,15 @@ func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[strin
 	m := map[string]*prompb.WriteRequest{}
 
 	for _, ts := range wrReqIn.Timeseries {
-		metricTimeseriesReceived.Inc()
 		tenant, err := p.processTimeseries(&ts)
 		if err != nil {
 			return nil, err
+		}
+
+		if p.cfg.ListenMetricsIncludeTenant {
+			metricTimeseriesReceived.WithLabelValues(tenant).Inc()
+		} else {
+			metricTimeseriesReceived.WithLabelValues("").Inc()
 		}
 
 		wrReqOut, ok := m[tenant]
@@ -342,6 +353,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 
 func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (r result) {
 	start := time.Now()
+	r.tenant = tenant
 
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
@@ -353,7 +365,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 
 	buf, err := p.marshal(wr)
 	if err != nil {
-	    r.err = err
+		r.err = err
 		return
 	}
 
@@ -368,14 +380,14 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.SetBody(buf)
 
 	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
-	    r.err = err
+		r.err = err
 		return
 	}
 
-    r.code = resp.Header.StatusCode()
-    r.body = make([]byte, len(resp.Body()))
-    copy(r.body, resp.Body())
-    r.duration = time.Since(start).Seconds() / 1000
+	r.code = resp.Header.StatusCode()
+	r.body = make([]byte, len(resp.Body()))
+	copy(r.body, resp.Body())
+	r.duration = time.Since(start).Seconds() / 1000
 
 	return
 }

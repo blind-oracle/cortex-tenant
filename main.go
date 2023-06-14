@@ -35,14 +35,12 @@ func main() {
 		}()
 	}
 
-	if cfg.ListenMetrics != "" {
-		go func() {
-		    http.Handle("/metrics", promhttp.Handler())
-			if err := http.ListenAndServe(cfg.ListenMetrics, nil); err != nil {
-				log.Fatalf("Unable to listen on %s: %s", cfg.ListenMetrics, err)
-			}
-		}()
-	}
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(cfg.ListenMetricsAddress, nil); err != nil {
+			log.Fatalf("Unable to listen on %s: %s", cfg.ListenMetricsAddress, err)
+		}
+	}()
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
