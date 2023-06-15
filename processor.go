@@ -212,7 +212,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	for _, r := range results {
-		if p.cfg.ListenMetricsIncludeTenant {
+		if p.cfg.MetricsIncludeTenant {
 			metricTenant = r.tenant
 		}
 
@@ -259,7 +259,7 @@ func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[strin
 			return nil, err
 		}
 
-		if p.cfg.ListenMetricsIncludeTenant {
+		if p.cfg.MetricsIncludeTenant {
 			metricTimeseriesReceived.WithLabelValues(tenant).Inc()
 		} else {
 			metricTimeseriesReceived.WithLabelValues("").Inc()
