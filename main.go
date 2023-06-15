@@ -10,6 +10,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,6 +34,13 @@ func main() {
 			}
 		}()
 	}
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(cfg.ListenMetricsAddress, nil); err != nil {
+			log.Fatalf("Unable to listen on %s: %s", cfg.ListenMetricsAddress, err)
+		}
+	}()
 
 	lvl, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {

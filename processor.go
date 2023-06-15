@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,14 +16,55 @@ import (
 	"github.com/google/uuid"
 	me "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/prometheus/prompb"
 	fh "github.com/valyala/fasthttp"
 )
 
+var (
+	metricTimeseriesBatchesReceived = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_batches_received",
+		Help:      "The total number of batches received.",
+	})
+	metricTimeseriesBatchesReceivedBytes = promauto.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_batches_received_bytes",
+		Help:      "Size in bytes of timeseries batches received.",
+		Buckets:   []float64{0.5, 1, 10, 25, 100, 250, 500, 1000, 5000, 10000, 30000, 300000, 600000, 1800000, 3600000},
+	})
+	metricTimeseriesReceived = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_received",
+		Help:      "The total number of timeseries received.",
+	}, []string{"tenant"})
+	metricTimeseriesRequestDurationMilliseconds = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_request_duration_milliseconds",
+		Help:      "HTTP write request duration for tenant-specific timeseries in milliseconds, filtered by response code.",
+		Buckets:   []float64{0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 1800000, 3600000},
+	},
+		[]string{"code", "tenant"},
+	)
+	metricTimeseriesRequestErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_request_errors",
+		Help:      "The total number of tenant-specific timeseries writes that yielded errors.",
+	}, []string{"tenant"})
+	metricTimeseriesRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "cortex_tenant",
+		Name:      "timeseries_requests",
+		Help:      "The total number of tenant-specific timeseries writes.",
+	}, []string{"tenant"})
+)
+
 type result struct {
-	code int
-	body []byte
-	err  error
+	code     int
+	body     []byte
+	duration float64
+	tenant   string
+	err      error
 }
 
 type processor struct {
@@ -119,6 +161,8 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	metricTimeseriesBatchesReceivedBytes.Observe(float64(ctx.Request.Header.ContentLength()))
+	metricTimeseriesBatchesReceived.Inc()
 	wrReqIn, err := p.unmarshal(ctx.Request.Body())
 	if err != nil {
 		ctx.Error(err.Error(), fh.StatusBadRequest)
@@ -132,15 +176,14 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-				code, body, err := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
-				if err != nil {
+				r := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
+				if r.err != nil {
 					ctx.Error(err.Error(), fh.StatusInternalServerError)
-					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, err)
+					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
 					return
 				}
-
-				ctx.SetStatusCode(code)
-				ctx.SetBody(body)
+				ctx.SetStatusCode(r.code)
+				ctx.SetBody(r.body)
 			}
 
 			return
@@ -156,6 +199,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	metricTenant := ""
 	var errs *me.Error
 	results := p.dispatch(clientIP, reqID, m)
 
@@ -168,7 +212,14 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 	}
 
 	for _, r := range results {
+		if p.cfg.MetricsIncludeTenant {
+			metricTenant = r.tenant
+		}
+
+		metricTimeseriesRequests.WithLabelValues(metricTenant).Inc()
+
 		if r.err != nil {
+			metricTimeseriesRequestErrors.WithLabelValues(metricTenant).Inc()
 			errs = me.Append(errs, r.err)
 			p.Errorf("src=%s %s", clientIP, r.err)
 			continue
@@ -183,6 +234,8 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		if r.code > code {
 			code, body = r.code, r.body
 		}
+
+		metricTimeseriesRequestDurationMilliseconds.WithLabelValues(strconv.Itoa(r.code), metricTenant).Observe(r.duration)
 	}
 
 	if errs.ErrorOrNil() != nil {
@@ -204,6 +257,12 @@ func (p *processor) createWriteRequests(wrReqIn *prompb.WriteRequest) (map[strin
 		tenant, err := p.processTimeseries(&ts)
 		if err != nil {
 			return nil, err
+		}
+
+		if p.cfg.MetricsIncludeTenant {
+			metricTimeseriesReceived.WithLabelValues(tenant).Inc()
+		} else {
+			metricTimeseriesReceived.WithLabelValues("").Inc()
 		}
 
 		wrReqOut, ok := m[tenant]
@@ -255,8 +314,7 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*p
 		go func(idx int, tenant string, wrReq *prompb.WriteRequest) {
 			defer wg.Done()
 
-			var r result
-			r.code, r.body, r.err = p.send(clientIP, reqID, tenant, wrReq)
+			r := p.send(clientIP, reqID, tenant, wrReq)
 			res[idx] = r
 		}(i, tenant, wrReq)
 
@@ -293,7 +351,10 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 	return
 }
 
-func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (code int, body []byte, err error) {
+func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (r result) {
+	start := time.Now()
+	r.tenant = tenant
+
 	req := fh.AcquireRequest()
 	resp := fh.AcquireResponse()
 
@@ -304,6 +365,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 
 	buf, err := p.marshal(wr)
 	if err != nil {
+		r.err = err
 		return
 	}
 
@@ -318,12 +380,14 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *
 	req.SetBody(buf)
 
 	if err = p.cli.DoTimeout(req, resp, p.cfg.Timeout); err != nil {
+		r.err = err
 		return
 	}
 
-	code = resp.Header.StatusCode()
-	body = make([]byte, len(resp.Body()))
-	copy(body, resp.Body())
+	r.code = resp.Header.StatusCode()
+	r.body = make([]byte, len(resp.Body()))
+	copy(r.body, resp.Body())
+	r.duration = time.Since(start).Seconds() / 1000
 
 	return
 }
