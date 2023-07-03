@@ -12,6 +12,7 @@ service:
   targetPort: 8080
 
 autoscaling:
+  enabled: true # If HorizontalPodAutoscaler must be enabled
   minReplica: 1 # Min number of pod replica autoscaled
   maxReplica: 3 # Max number of pod replica autoscaled
   targetMemoryAverageValue: 100Mi
