@@ -2,11 +2,14 @@
 name: docker
 
 on:
-  # publish on releases, e.g. v2.1.13 (image tagged as "2.1.13" - "v" prefix is removed)
   release:
     types:
       - published
-      
+
+  push:
+    branches:
+      - master
+
   workflow_dispatch:
   
 jobs:
