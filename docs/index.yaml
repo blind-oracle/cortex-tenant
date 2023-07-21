@@ -3,7 +3,17 @@ entries:
   cortex-tenant:
   - apiVersion: v2
     appVersion: 1.11.0
-    created: "2023-07-03T12:50:35.512296578+02:00"
+    created: "2023-07-21T13:23:40.3468175+02:00"
+    description: A Helm Chart for cortex-tenant
+    digest: c967d4dea6ff8ae827133876f588d22bfa51d10168e4bca57f161b7ab6097c7c
+    name: cortex-tenant
+    type: application
+    urls:
+    - cortex-tenant-0.2.1.tgz
+    version: 0.2.1
+  - apiVersion: v2
+    appVersion: 1.11.0
+    created: "2023-07-21T13:23:40.3464084+02:00"
     description: A Helm Chart for cortex-tenant
     digest: 8b9caea0e1774a6c8f3e627a63386f532498ca5f410927c702380692e5d20b61
     name: cortex-tenant
@@ -13,7 +23,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.10.1
-    created: "2023-07-03T12:50:35.511825114+02:00"
+    created: "2023-07-21T13:23:40.3459992+02:00"
     description: A Helm Chart for cortex-tenant
     digest: eabef3ad16e555543e32d9308994f76679e5fa54371cccd3957112f33a28a59e
     name: cortex-tenant
@@ -21,4 +31,4 @@ entries:
     urls:
     - cortex-tenant-0.1.0.tgz
     version: 0.1.0
-generated: "2023-07-03T12:50:35.511245964+02:00"
+generated: "2023-07-21T13:23:40.3454267+02:00"
