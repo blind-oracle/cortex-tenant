@@ -23,14 +23,18 @@ spec:
           name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.envs }}
           env:
             {{- range .Values.envs }}
             - name: "{{ .name }}"
               value: "{{ .value }}"
             {{- end }}
+          {{- end }}
+          {{- if and .Values.config.auth.enabled .Values.config.auth.existingSecret }}
           envFrom:
           - secretRef:
               name: {{ .Values.config.auth.existingSecret }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
