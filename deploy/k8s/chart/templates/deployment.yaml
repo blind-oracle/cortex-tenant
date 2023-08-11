@@ -39,6 +39,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+            {{- if .Values.serviceMonitor.enabled }}
+            - name: http-metrics
+              containerPort: {{ .Values.serviceMonitor.targetPort }}
+              protocol: TCP
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

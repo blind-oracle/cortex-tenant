@@ -11,5 +11,11 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
+    {{- if .Values.serviceMonitor.enabled }}
+    - name: http-metrics
+      port: {{ .Values.serviceMonitor.targetPort }}
+      targetPort: http-metrics
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "cortex-tenant.selectorLabels" . | nindent 4 }}
