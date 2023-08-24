@@ -45,10 +45,7 @@ A Helm Chart for cortex-tenant
 | podAnnotations | object | `{}` |  |
 | podDisruptionBudget.enabled | bool | `true` |  |
 | podDisruptionBudget.minAvailable | int | `1` |  |
-| podSecurityContext.fsGroup | int | `1000` |  |
-| podSecurityContext.runAsGroup | int | `1000` |  |
-| podSecurityContext.runAsNonRoot | bool | `true` |  |
-| podSecurityContext.runAsUser | int | `1000` |  |
+| podSecurityContext | object | `{}` |  |
 | resources.limits.memory | string | `"256Mi"` |  |
 | resources.requests.cpu | string | `"100m"` |  |
 | resources.requests.memory | string | `"128Mi"` |  |
