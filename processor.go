@@ -59,7 +59,7 @@ func newProcessor(c config, tenantLookup map[string]string) *processor {
 
 		ReadTimeout:  c.Timeout,
 		WriteTimeout: c.Timeout,
-		IdleTimeout:  60 * time.Second,
+		IdleTimeout:  1800 * time.Second,
 
 		Concurrency: c.Concurrency,
 	}

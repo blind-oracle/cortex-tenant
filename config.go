@@ -56,7 +56,7 @@ func configParse(b []byte) (*config, error) {
 	}
 
 	if cfg.Timeout == 0 {
-		cfg.Timeout = 10 * time.Second
+		cfg.Timeout = 30 * time.Second
 	}
 
 	if cfg.Concurrency == 0 {

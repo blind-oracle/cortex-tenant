@@ -5,3 +5,4 @@ generate
 *.rpm
 *.deb
 config.yaml
+.idea/
