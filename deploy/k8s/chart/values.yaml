@@ -127,3 +127,44 @@ nodeSelector: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduli
 tolerations: [] # [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
 
 affinity: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
+
+# ServiceMonitor configuration
+serviceMonitor:
+  # -- If enabled, ServiceMonitor resources for Prometheus Operator are created
+  enabled: false
+  # -- Alternative namespace for ServiceMonitor resources
+  namespace: null
+  # Service targetPort
+  targetPort: 9090
+  # -- Namespace selector for ServiceMonitor resources
+  namespaceSelector: {}
+  # -- ServiceMonitor annotations
+  annotations: {}
+  # -- Additional ServiceMonitor labels
+  labels: {}
+  # -- ServiceMonitor scrape interval
+  interval: null
+  # -- ServiceMonitor scrape timeout in Go duration format (e.g. 15s)
+  scrapeTimeout: null
+  # -- ServiceMonitor relabel configs to apply to samples before scraping
+  # https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+  # (defines `relabel_configs`)
+  relabelings: []
+  # -- ServiceMonitor relabel configs to apply to samples as the last
+  # step before ingestion
+  # https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/api.md#relabelconfig
+  # (defines `metric_relabel_configs`)
+  metricRelabelings: []
+  # --ServiceMonitor will add labels from the service to the Prometheus metric
+  # https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#servicemonitorspec
+  targetLabels: []
+  # -- ServiceMonitor will use http by default, but you can pick https as well
+  scheme: http
+  # -- ServiceMonitor will use these tlsConfig settings to make the health check requests
+  tlsConfig: null
+  # -- Prometheus rules will be deployed for alerting purposes
+  prometheusRule:
+    enabled: false
+    additionalLabels: {}
+    # namespace:
+    rules: []
