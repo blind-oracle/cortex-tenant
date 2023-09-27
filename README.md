@@ -105,6 +105,14 @@ log_response_errors: true
 # env: CT_MAX_CONN_DURATION
 max_connection_duration: 0s
 
+# Address where metrics are available
+# env: CT_LISTEN_METRICS_ADDRESS
+listen_metrics_address: 0.0.0.0:9090
+
+# If true, then a label with the tenant’s name will be added to the metrics
+# env: CT_METRICS_INCLUDE_TENANT
+metrics_include_tenant: true
+
 tenant:
   # Which label to look for the tenant information
   # env: CT_TENANT_LABEL
