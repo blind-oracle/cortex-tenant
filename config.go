@@ -28,7 +28,8 @@ type config struct {
 	LogResponseErrors bool          `yaml:"log_response_errors" env:"CT_LOG_RESPONSE_ERRORS"`
 	MaxConnDuration   time.Duration `yaml:"max_connection_duration" env:"CT_MAX_CONN_DURATION"`
 	MaxConnsPerHost   int           `env:"CT_MAX_CONNS_PER_HOST" yaml:"max_conns_per_host"`
-	Auth              struct {
+
+	Auth struct {
 		Egress struct {
 			Username string `env:"CT_AUTH_EGRESS_USERNAME"`
 			Password string `env:"CT_AUTH_EGRESS_PASSWORD"`
