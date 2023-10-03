@@ -26,6 +26,8 @@ log_level: debug
 timeout: 50ms
 timeout_shutdown: 100ms
 
+max_conns_per_host: 64
+
 tenant:
   label_remove: false
   default: default

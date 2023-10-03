@@ -60,6 +60,10 @@ target: http://127.0.0.1:9091/receive
 # env: CT_ENABLE_IPV6
 enable_ipv6: false
 
+# Set max conn per host
+# env: CT_MAX_CONNS_PER_HOST
+max_conns_per_host: 64
+
 # Authentication (optional)
 auth:
   # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
