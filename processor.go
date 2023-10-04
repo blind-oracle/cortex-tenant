@@ -106,7 +106,7 @@ func newProcessor(c config) *processor {
 		ReadTimeout:        c.Timeout,
 		WriteTimeout:       c.Timeout,
 		MaxConnWaitTimeout: 1 * time.Second,
-		MaxConnsPerHost:    64,
+		MaxConnsPerHost:    c.MaxConnsPerHost,
 		DialDualStack:      c.EnableIPv6,
 		MaxConnDuration:    c.MaxConnDuration,
 	}

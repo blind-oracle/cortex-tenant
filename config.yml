@@ -5,6 +5,7 @@ metrics_include_tenant: true
 
 target: http://127.0.0.1:9091/receive
 enable_ipv6: false
+max_conns_per_host: 64
 
 auth:
   egress:
