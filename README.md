@@ -60,11 +60,11 @@ target: http://127.0.0.1:9091/receive
 # env: CT_ENABLE_IPV6
 enable_ipv6: false
 
-# Use this parameter when you need to improve the outgoing maximum connections to backend (mimir / cortex)
-# Generally use this parameter when you send many incomming requests which overwhelming the outgoing side to cortex-tenant (cortex / mimir etc)
-# Set max conn per host
+# This parameter sets the limit for the count of outgoing concurrent connections to Cortex / Mimir.
+# By default it's 64 and if all of these connections are busy you will get errors when pushing from Prometheus.
+# If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
 # env: CT_MAX_CONNS_PER_HOST
-max_conns_per_host: 64
+max_conns_per_host: 0
 
 # Authentication (optional)
 auth:
