@@ -60,6 +60,8 @@ target: http://127.0.0.1:9091/receive
 # env: CT_ENABLE_IPV6
 enable_ipv6: false
 
+# Use this parameter when you need to improve the outgoing maximum connections to backend (mimir / cortex)
+# Generally use this parameter when you send many incomming requests which overwhelming the outgoing side to cortex-tenant (cortex / mimir etc)
 # Set max conn per host
 # env: CT_MAX_CONNS_PER_HOST
 max_conns_per_host: 64
