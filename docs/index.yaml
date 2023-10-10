@@ -3,7 +3,27 @@ entries:
   cortex-tenant:
   - apiVersion: v2
     appVersion: 1.11.0
-    created: "2023-08-11T17:35:30.148984+02:00"
+    created: "2023-08-24T12:48:05.911353+02:00"
+    description: A Helm Chart for cortex-tenant
+    digest: 56abb06ce3f646b94932d36b0d4ed5e5386ec390ebfd7d9110036291086d6f39
+    name: cortex-tenant
+    type: application
+    urls:
+    - cortex-tenant-0.3.2.tgz
+    version: 0.3.2
+  - apiVersion: v2
+    appVersion: 1.11.0
+    created: "2023-08-24T12:48:05.910756+02:00"
+    description: A Helm Chart for cortex-tenant
+    digest: 834b006e449ae97219799bfa3b7bd274aa386978802dbd49279258f534cc4da5
+    name: cortex-tenant
+    type: application
+    urls:
+    - cortex-tenant-0.3.1.tgz
+    version: 0.3.1
+  - apiVersion: v2
+    appVersion: 1.11.0
+    created: "2023-08-24T12:48:05.909019+02:00"
     description: A Helm Chart for cortex-tenant
     digest: cf12ab22dd0973e94e15d8246f66ae35738dadfc489952f919ed326a1f7eed5a
     name: cortex-tenant
@@ -13,7 +33,7 @@ entries:
     version: 0.3.0
   - apiVersion: v2
     appVersion: 1.11.0
-    created: "2023-08-11T17:35:30.148575+02:00"
+    created: "2023-08-24T12:48:05.907357+02:00"
     description: A Helm Chart for cortex-tenant
     digest: c967d4dea6ff8ae827133876f588d22bfa51d10168e4bca57f161b7ab6097c7c
     name: cortex-tenant
@@ -23,7 +43,7 @@ entries:
     version: 0.2.1
   - apiVersion: v2
     appVersion: 1.11.0
-    created: "2023-08-11T17:35:30.148215+02:00"
+    created: "2023-08-24T12:48:05.903241+02:00"
     description: A Helm Chart for cortex-tenant
     digest: 8b9caea0e1774a6c8f3e627a63386f532498ca5f410927c702380692e5d20b61
     name: cortex-tenant
@@ -33,7 +53,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.10.1
-    created: "2023-08-11T17:35:30.147801+02:00"
+    created: "2023-08-24T12:48:05.902166+02:00"
     description: A Helm Chart for cortex-tenant
     digest: eabef3ad16e555543e32d9308994f76679e5fa54371cccd3957112f33a28a59e
     name: cortex-tenant
@@ -41,4 +61,4 @@ entries:
     urls:
     - cortex-tenant-0.1.0.tgz
     version: 0.1.0
-generated: "2023-08-11T17:35:30.147201+02:00"
+generated: "2023-08-24T12:48:05.899646+02:00"
