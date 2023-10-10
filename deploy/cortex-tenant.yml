@@ -2,6 +2,8 @@ listen: 0.0.0.0:8080
 target: http://127.0.0.1:9091/receive
 log_level: warn
 timeout: 10s
+listen_metrics_address: 0.0.0.0:9090
+metrics_include_tenant: true
 
 tenant:
   label: __tenant__

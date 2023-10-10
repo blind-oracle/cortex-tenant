@@ -27,6 +27,7 @@ type config struct {
 	Metadata          bool          `env:"CT_METADATA"`
 	LogResponseErrors bool          `yaml:"log_response_errors" env:"CT_LOG_RESPONSE_ERRORS"`
 	MaxConnDuration   time.Duration `yaml:"max_connection_duration" env:"CT_MAX_CONN_DURATION"`
+	MaxConnsPerHost   int           `env:"CT_MAX_CONNS_PER_HOST" yaml:"max_conns_per_host"`
 
 	Auth struct {
 		Egress struct {
@@ -102,6 +103,10 @@ func configLoad(file string) (*config, error) {
 		if cfg.Auth.Egress.Password == "" {
 			return nil, fmt.Errorf("egress auth user specified, but the password is not")
 		}
+	}
+
+	if cfg.MaxConnsPerHost == 0 {
+		cfg.MaxConnsPerHost = 64
 	}
 
 	return cfg, nil

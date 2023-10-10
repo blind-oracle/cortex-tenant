@@ -60,6 +60,12 @@ target: http://127.0.0.1:9091/receive
 # env: CT_ENABLE_IPV6
 enable_ipv6: false
 
+# This parameter sets the limit for the count of outgoing concurrent connections to Cortex / Mimir.
+# By default it's 64 and if all of these connections are busy you will get errors when pushing from Prometheus.
+# If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
+# env: CT_MAX_CONNS_PER_HOST
+max_conns_per_host: 0
+
 # Authentication (optional)
 auth:
   # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
@@ -104,6 +110,14 @@ log_response_errors: true
 # Use 0 to keep them indefinitely
 # env: CT_MAX_CONN_DURATION
 max_connection_duration: 0s
+
+# Address where metrics are available
+# env: CT_LISTEN_METRICS_ADDRESS
+listen_metrics_address: 0.0.0.0:9090
+
+# If true, then a label with the tenant’s name will be added to the metrics
+# env: CT_METRICS_INCLUDE_TENANT
+metrics_include_tenant: true
 
 tenant:
   # Which label to look for the tenant information
