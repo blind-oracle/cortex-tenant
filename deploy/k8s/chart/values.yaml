@@ -156,6 +156,9 @@ tolerations: []
 # -- [Affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
 affinity: {}
 
+# -- [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/)
+podTopologySpreadConstraints: []
+
 # ServiceMonitor configuration
 serviceMonitor:
   # -- If enabled, ServiceMonitor resources for Prometheus Operator are created

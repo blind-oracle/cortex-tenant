@@ -47,6 +47,7 @@ A Helm Chart for cortex-tenant
 | podDisruptionBudget.enabled | bool | `true` | If enabled, PodDisruptionBudget resources are created |
 | podDisruptionBudget.minAvailable | int | `1` | Minimum number of pods that must remain scheduled |
 | podSecurityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
+| podTopologySpreadConstraints | list | `[]` | [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) |
 | resources.limits | object | `{"memory":"256Mi"}` | Resources limits |
 | resources.requests | object | `{"cpu":"100m","memory":"128Mi"}` | Resources requests |
 | securityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
