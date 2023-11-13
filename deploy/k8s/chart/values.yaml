@@ -112,6 +112,8 @@ podDisruptionBudget:
   enabled: true # If Pod disruption must be enabled
   minAvailable: 1 # Number of min pods that must remain available
 
+annotations: {} # Annotations for deployment
+
 podAnnotations: {} # Annotations for pods
 
 podSecurityContext: {} # [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
