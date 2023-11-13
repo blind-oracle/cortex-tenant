@@ -4,6 +4,10 @@ metadata:
   labels:
     {{- include "cortex-tenant.labels" . | nindent 4 }}
   name: {{ include "cortex-tenant.fullname" . }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     matchLabels:
@@ -12,7 +16,7 @@ spec:
     metadata:
       annotations:
         {{- with .Values.podAnnotations }}
-        {{- toYaml .Values.podAnnotations  | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
         {{- include "cortex-tenant.selectorLabels" . | nindent 8 }}
@@ -65,5 +69,9 @@ spec:
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podTopologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}

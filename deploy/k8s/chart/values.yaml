@@ -1,128 +1,163 @@
+# -- Application name override
 nameOverride:
+# -- Application fullname override
 fullnameOverride:
 
 image:
-  repository: ghcr.io/blind-oracle/cortex-tenant # registry to pull
-  pullPolicy: IfNotPresent # policy when pulling images
-  tag: "" # Overrides the image tag (default is `.Chart.appVersion`)
+  # -- Repository to pull the image
+  repository: ghcr.io/blind-oracle/cortex-tenant
+  # -- Policy when pulling images
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag (default is `.Chart.appVersion`)
+  tag: ""
 
 service:
+  # -- The type of service
   type: ClusterIP
+  # -- The port on which the service listens for traffic
   port: 8080
+  # The target port to which traffic is forwarded
   targetPort: 8080
 
 autoscaling:
-  enabled: true # If HorizontalPodAutoscaler must be enabled
-  minReplica: 1 # Min number of pod replica autoscaled
-  maxReplica: 3 # Max number of pod replica autoscaled
+  # -- If enabled, HorizontalPodAutoscaler resources are created
+  enabled: true
+  # -- Min number of pod replica autoscaled
+  minReplica: 1
+  # -- Max number of pod replica autoscaled
+  maxReplica: 3
+  # -- Target memory average value for autoscaling
   targetMemoryAverageValue: 100Mi
+  # -- Target CPU utilization percentage for autoscaling
   targetCPUUtilizationPercentage: 50
 
+# -- Additional environment variables
 envs:
+  []
+  # - name: CT_LISTEN
+  #   value:
 
 config:
-  # Where to listen for incoming write requests from Prometheus
-  # env: CT_LISTEN
+  # -- Where to listen for incoming write requests from Prometheus
+  # (env: `CT_LISTEN`)
   listen: 0.0.0.0:8080
-  # Profiling API, leave empty to disable
-  # env: CT_LISTEN_PPROF
+  # -- Profiling API, leave empty to disable
+  # (env: `CT_LISTEN_PPROF`)
   listen_pprof: 0.0.0.0:7008
-  # Where to send the modified requests (Cortex)
-  # env: CT_TARGET
+  # -- Where to send the modified requests (Cortex)
+  # (env: `CT_TARGET`)
   target: http://cortex-distributor.cortex.svc:8080/api/v1/push
-  # Whether to enable querying for IPv6 records
-  # env: CT_ENABLE_IPV6
+  # -- Whether to enable querying for IPv6 records
+  # (env: `CT_ENABLE_IPV6`)
   enable_ipv6: false
-  # Log level
-  # env: CT_LOG_LEVEL
+  # -- Log level
+  # (env: `CT_LOG_LEVEL`)
   log_level: warn
-  # HTTP request timeout
-  # env: CT_TIMEOUT
+  # -- HTTP request timeout
+  # (env: `CT_TIMEOUT`)
   timeout: 10s
-  # Timeout to wait on shutdown to allow load balancers detect that we're going away.
+  # -- Timeout to wait on shutdown to allow load balancers detect that we're going away.
   # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
   # Set to 0s to disable.
-  # env: CT_TIMEOUT_SHUTDOWN
+  # (env: `CT_TIMEOUT_SHUTDOWN`)
   timeout_shutdown: 10s
-  # Max number of parallel incoming HTTP requests to handle
-  # env: CT_CONCURRENCY
+  # -- Max number of parallel incoming HTTP requests to handle
+  # (env: `CT_CONCURRENCY`)
   concurrency: 1000
-  # Whether to forward metrics metadata from Prometheus to Cortex
+  # -- Whether to forward metrics metadata from Prometheus to Cortex
   # Since metadata requests have no timeseries in them - we cannot divide them into tenants
   # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
-  # env: CT_METADATA
+  # (env: `CT_METADATA`)
   metadata: false
-  # If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
+  # -- If true response codes from metrics backend will be logged to stdout. This setting can be used to suppress errors
   # which can be quite verbose like 400 code - out-of-order samples or 429 on hitting ingestion limits
   # Also, those are already reported by other services like Cortex/Mimir distributors and ingesters
-  # env: CT_LOG_RESPONSE_ERRORS
+  # (env: `CT_LOG_RESPONSE_ERRORS`)
   log_response_errors: true
-  # Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
+  # -- Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
   # Useful for resetting L4 load-balancer state
   # Use 0 to keep them indefinitely
-  # env: CT_MAX_CONN_DURATION
+  # (env: `CT_MAX_CONN_DURATION`)
   max_connection_duration: 0s
 
   # Authentication (optional)
   auth:
-    # Egress HTTP basic auth -> add `Authentication` header to outgoing requests
+    # -- Egress HTTP basic auth -> add `Authentication` header to outgoing requests
     enabled: false
-    # env: CT_AUTH_EGRESS_USERNAME
-    # env: CT_AUTH_EGRESS_PASSWORD
+    # -- Username
+    # (env: `CT_AUTH_EGRESS_USERNAME`)
     username:
+    # -- Password
+    # (env: `CT_AUTH_EGRESS_PASSWORD`)
     password:
-    # Secret should pass the CT_AUTH_EGRESS_USERNAME and CT_AUTH_EGRESS_PASSWORD env variables
+    # -- Secret should pass the `CT_AUTH_EGRESS_USERNAME` and `CT_AUTH_EGRESS_PASSWORD` env variables
     existingSecret:
 
   tenant:
-    # Which label to look for the tenant information
-    # env: CT_TENANT_LABEL
+    # -- Which label to look for the tenant information
+    # (env: `CT_TENANT_LABEL`)
     label: tenant
-    # Optional hard-coded prefix with delimeter for all tenant values.
+    # -- Optional hard-coded prefix with delimeter for all tenant values.
     # Delimeters allowed for use:
     # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
-    # env: CT_TENANT_PREFIX
+    # (env: `CT_TENANT_PREFIX`)
     prefix: ""
-    # Whether to remove the tenant label from the request
-    # env: CT_TENANT_LABEL_REMOVE
+    # -- Whether to remove the tenant label from the request
+    # (env: `CT_TENANT_LABEL_REMOVE`)
     label_remove: false
-    # To which header to add the tenant ID
-    # env: CT_TENANT_HEADER
+    # -- To which header to add the tenant ID
+    # (env: `CT_TENANT_HEADER`)
     header: X-Scope-OrgID
-    # Which tenant ID to use if the label is missing in any of the timeseries
+    # -- Which tenant ID to use if the label is missing in any of the timeseries
     # If this is not set or empty then the write request with missing tenant label
     # will be rejected with HTTP code 400
-    # env: CT_TENANT_DEFAULT
+    # (env: `CT_TENANT_DEFAULT`)
     default: cortex-tenant-default
-    # Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
+    # -- Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
     # regardless of the response from Cortex. This can lose metrics if Cortex is
     # throwing rejections.
-    # env: CT_TENANT_ACCEPT_ALL
+    # (env: `CT_TENANT_ACCEPT_ALL`)
     accept_all: false
 
-resources: # Resource limits and requests for simu
+resources:
+  # -- Resources limits
   limits:
     # cpu: 100m
     memory: 256Mi
+  # -- Resources requests
   requests:
     cpu: 100m
     memory: 128Mi
 
 podDisruptionBudget:
-  enabled: true # If Pod disruption must be enabled
-  minAvailable: 1 # Number of min pods that must remain available
+  # -- If enabled, PodDisruptionBudget resources are created
+  enabled: true
+  # -- Minimum number of pods that must remain scheduled
+  minAvailable: 1
 
-podAnnotations: {} # Annotations for pods
+# -- Annotations for deployment
+annotations: {}
 
-podSecurityContext: {} # [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+# -- Annotations for pods
+podAnnotations: {}
 
-securityContext: {} # [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+# -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+podSecurityContext: {}
 
-nodeSelector: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
+# -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
+securityContext: {}
 
-tolerations: [] # [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
+# -- [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
+nodeSelector: {}
 
-affinity: {} # [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
+# -- [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/)
+tolerations: []
+
+# -- [Affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+affinity: {}
+
+# -- [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/)
+podTopologySpreadConstraints: []
 
 # ServiceMonitor configuration
 serviceMonitor:
