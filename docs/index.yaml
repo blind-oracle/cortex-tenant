@@ -3,7 +3,19 @@ entries:
   cortex-tenant:
   - apiVersion: v2
     appVersion: 1.11.0
-    created: "2023-08-24T12:48:05.911353+02:00"
+    created: "2023-11-15T23:28:52.818836+03:00"
+    description: A Helm Chart for cortex-tenant
+    digest: 60131d246dca1ead2fea8a2c188f25a5fe3c4d90368ba091a4bd0e4e8e6dcceb
+    name: cortex-tenant
+    sources:
+    - https://github.com/blind-oracle/cortex-tenant
+    type: application
+    urls:
+    - cortex-tenant-0.4.0.tgz
+    version: 0.4.0
+  - apiVersion: v2
+    appVersion: 1.11.0
+    created: "2023-11-15T23:28:52.817654+03:00"
     description: A Helm Chart for cortex-tenant
     digest: 56abb06ce3f646b94932d36b0d4ed5e5386ec390ebfd7d9110036291086d6f39
     name: cortex-tenant
@@ -61,4 +73,4 @@ entries:
     urls:
     - cortex-tenant-0.1.0.tgz
     version: 0.1.0
-generated: "2023-08-24T12:48:05.899646+02:00"
+generated: "2023-11-15T23:28:52.81508+03:00"
