@@ -4,3 +4,5 @@ name: cortex-tenant
 version: 0.3.2 # This is the chart version
 appVersion: 1.11.0 # version number of the application being deployed.
 type: application
+sources:
+  - https://github.com/blind-oracle/cortex-tenant
