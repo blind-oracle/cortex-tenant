@@ -5,3 +5,6 @@ generate
 *.rpm
 *.deb
 config.yaml
+.vscode
+.idea
+.DS_Store
