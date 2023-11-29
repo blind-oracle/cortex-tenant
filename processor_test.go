@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	fh "github.com/valyala/fasthttp"
 	fhu "github.com/valyala/fasthttp/fasthttputil"
@@ -451,4 +452,35 @@ func Benchmark_marshal(b *testing.B) {
 		buf, _ := p.marshal(testWRQ)
 		_, _ = p.unmarshal(buf)
 	}
+}
+
+func TestRemoveOrdered(t *testing.T) {
+	l := []prompb.Label{
+		{
+			Name:  "aaa",
+			Value: "bbb",
+		},
+	}
+
+	l = removeOrdered(l, 0)
+	require.Equal(t, []prompb.Label{}, l)
+
+	l = []prompb.Label{
+		{
+			Name:  "aaa",
+			Value: "bbb",
+		},
+		{
+			Name:  "ccc",
+			Value: "ddd",
+		},
+	}
+	l = removeOrdered(l, 0)
+	require.Equal(t, []prompb.Label{
+		{
+			Name:  "ccc",
+			Value: "ddd",
+		},
+	}, l)
+
 }
