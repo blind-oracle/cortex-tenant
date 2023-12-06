@@ -325,6 +325,10 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*p
 	return
 }
 
+func removeOrdered(slice []prompb.Label, s int) []prompb.Label {
+	return append(slice[:s], slice[s+1:]...)
+}
+
 func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err error) {
 	idx := 0
 	for i, l := range ts.Labels {
@@ -343,9 +347,10 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 	}
 
 	if p.cfg.Tenant.LabelRemove {
-		l := len(ts.Labels)
-		ts.Labels[idx] = ts.Labels[l-1]
-		ts.Labels = ts.Labels[:l-1]
+		// Order is important. See:
+		// https://github.com/thanos-io/thanos/issues/6452
+		// https://github.com/prometheus/prometheus/issues/11505
+		ts.Labels = removeOrdered(ts.Labels, idx)
 	}
 
 	return
