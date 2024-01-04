@@ -100,6 +100,8 @@ config:
     # -- Which label to look for the tenant information
     # (env: `CT_TENANT_LABEL`)
     label: tenant
+    # -- List of labels examined for tenant information. If set takes precedent over `label`
+    label_list: []
     # -- Optional hard-coded prefix with delimeter for all tenant values.
     # Delimeters allowed for use:
     # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/

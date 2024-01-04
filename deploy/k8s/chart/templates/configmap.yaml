@@ -25,6 +25,10 @@ data:
     {{- end }}
     tenant:
       label: {{ .Values.config.tenant.label }}
+      {{- with .Values.config.tenant.label_list }}
+      label_list:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
       prefix: {{ .Values.config.tenant.prefix }}
       label_remove: {{ .Values.config.tenant.label_remove }}
       header: {{ .Values.config.tenant.header }}

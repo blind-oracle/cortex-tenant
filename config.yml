@@ -21,6 +21,9 @@ log_response_errors: true
 
 tenant:
   label: tenant
+  label_list:
+    - tenat
+    - other_tenant
   prefix: ""
   label_remove: true
   header: X-Scope-OrgID

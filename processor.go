@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -331,16 +332,25 @@ func removeOrdered(slice []prompb.Label, s int) []prompb.Label {
 
 func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err error) {
 	idx := 0
+
+	configuredLabels := p.cfg.Tenant.LabelList
+
+	if len(configuredLabels) == 0 {
+		configuredLabels = append(configuredLabels, p.cfg.Tenant.Label)
+	}
+
 	for i, l := range ts.Labels {
-		if l.Name == p.cfg.Tenant.Label {
-			tenant, idx = l.Value, i
-			break
+		for _, configuredLabel := range configuredLabels {
+			if l.Name == configuredLabel {
+				tenant, idx = l.Value, i
+				break
+			}
 		}
 	}
 
 	if tenant == "" {
 		if p.cfg.Tenant.Default == "" {
-			return "", fmt.Errorf("label '%s' not found", p.cfg.Tenant.Label)
+			return "", fmt.Errorf("label(s): {'%s'} not found", strings.Join(configuredLabels, "','"))
 		}
 
 		return p.cfg.Tenant.Default, nil
