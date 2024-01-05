@@ -42,6 +42,10 @@ data:
       # Delimeters allowed for use:
       # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
       prefix: ""
+      # If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
+      # Will be automatically suffixed with a `-` character.
+      # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+      prefix_prefer_source: false
       # Whether to remove the tenant label from the request
       label_remove: false
       # To which header to add the tenant ID

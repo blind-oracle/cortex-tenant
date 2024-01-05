@@ -107,6 +107,10 @@ config:
     # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
     # (env: `CT_TENANT_PREFIX`)
     prefix: ""
+    # -- If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
+    # Will be automatically suffixed with a `-` character.
+    # (env: `CT_TENANT_PREFIX_PREFER_SOURCE`)
+    prefix_prefer_source: false
     # -- Whether to remove the tenant label from the request
     # (env: `CT_TENANT_LABEL_REMOVE`)
     label_remove: false

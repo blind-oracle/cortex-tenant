@@ -226,7 +226,7 @@ func Test_request_headers(t *testing.T) {
 	req := fh.AcquireRequest()
 	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
 	reqID, _ := uuid.NewRandom()
-	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
+	p.fillRequestHeaders(clientIP, reqID, "", "my-tenant", req)
 
 	assert.Equal(t, "snappy", string(req.Header.Peek("Content-Encoding")))
 	assert.Equal(t, "my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
@@ -241,7 +241,7 @@ func Test_request_headers_with_prefix(t *testing.T) {
 	req := fh.AcquireRequest()
 	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
 	reqID, _ := uuid.NewRandom()
-	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
+	p.fillRequestHeaders(clientIP, reqID, "foobar-", "my-tenant", req)
 
 	assert.Equal(t, "foobar-my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
 }

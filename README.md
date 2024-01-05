@@ -155,6 +155,12 @@ tenant:
   # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
   # env: CT_TENANT_PREFIX
   prefix: foobar-
+
+  # If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
+  # Will be automatically suffixed with a `-` character.
+  # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+  # env: CT_TENANT_PREFIX
+  prefix_prefer_source: false
 ```
 
 ### Prometheus configuration example
