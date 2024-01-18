@@ -22,7 +22,7 @@ log_response_errors: true
 tenant:
   label: tenant
   label_list:
-    - tenat
+    - tenant
     - other_tenant
   prefix: ""
   label_remove: true
