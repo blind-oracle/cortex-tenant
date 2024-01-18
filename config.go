@@ -100,6 +100,11 @@ func configLoad(file string) (*config, error) {
 		cfg.Tenant.Label = "__tenant__"
 	}
 
+	// Default to the Label if list is empty
+	if len(cfg.Tenant.LabelList) == 0 {
+		cfg.Tenant.LabelList = append(cfg.Tenant.LabelList, cfg.Tenant.Label)
+	}
+
 	if cfg.Auth.Egress.Username != "" {
 		if cfg.Auth.Egress.Password == "" {
 			return nil, fmt.Errorf("egress auth user specified, but the password is not")

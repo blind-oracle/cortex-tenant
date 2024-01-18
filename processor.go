@@ -333,14 +333,8 @@ func removeOrdered(slice []prompb.Label, s int) []prompb.Label {
 func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err error) {
 	idx := 0
 
-	configuredLabels := p.cfg.Tenant.LabelList
-
-	if len(configuredLabels) == 0 {
-		configuredLabels = append(configuredLabels, p.cfg.Tenant.Label)
-	}
-
 	for i, l := range ts.Labels {
-		for _, configuredLabel := range configuredLabels {
+		for _, configuredLabel := range p.cfg.Tenant.LabelList {
 			if l.Name == configuredLabel {
 				tenant, idx = l.Value, i
 				break
@@ -350,7 +344,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 
 	if tenant == "" {
 		if p.cfg.Tenant.Default == "" {
-			return "", fmt.Errorf("label(s): {'%s'} not found", strings.Join(configuredLabels, "','"))
+			return "", fmt.Errorf("label(s): {'%s'} not found", strings.Join(p.cfg.Tenant.LabelList, "','"))
 		}
 
 		return p.cfg.Tenant.Default, nil
