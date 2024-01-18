@@ -37,12 +37,13 @@ type config struct {
 	}
 
 	Tenant struct {
-		Label       string `env:"CT_TENANT_LABEL"`
-		Prefix      string `yaml:"prefix" env:"CT_TENANT_PREFIX"`
-		LabelRemove bool   `yaml:"label_remove" env:"CT_TENANT_LABEL_REMOVE"`
-		Header      string `env:"CT_TENANT_HEADER"`
-		Default     string `env:"CT_TENANT_DEFAULT"`
-		AcceptAll   bool   `yaml:"accept_all" env:"CT_TENANT_ACCEPT_ALL"`
+		Label       string   `env:"CT_TENANT_LABEL"`
+		LabelList   []string `yaml:"label_list" env:"CT_TENANT_LABEL_LIST" envSeparator:","`
+		Prefix      string   `yaml:"prefix" env:"CT_TENANT_PREFIX"`
+		LabelRemove bool     `yaml:"label_remove" env:"CT_TENANT_LABEL_REMOVE"`
+		Header      string   `env:"CT_TENANT_HEADER"`
+		Default     string   `env:"CT_TENANT_DEFAULT"`
+		AcceptAll   bool     `yaml:"accept_all" env:"CT_TENANT_ACCEPT_ALL"`
 	}
 
 	pipeIn  *fhu.InmemoryListener
@@ -97,6 +98,11 @@ func configLoad(file string) (*config, error) {
 
 	if cfg.Tenant.Label == "" {
 		cfg.Tenant.Label = "__tenant__"
+	}
+
+	// Default to the Label if list is empty
+	if len(cfg.Tenant.LabelList) == 0 {
+		cfg.Tenant.LabelList = append(cfg.Tenant.LabelList, cfg.Tenant.Label)
 	}
 
 	if cfg.Auth.Egress.Username != "" {

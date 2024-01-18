@@ -32,6 +32,10 @@ max_conns_per_host: 64
 tenant:
   label_remove: false
   default: default
+  label_list:
+    - "__tenant__"
+    - "__foo__"
+    - "__bar__"
 `
 	testConfigWithValues = `listen: 0.0.0.0:8080
 listen_pprof: 0.0.0.0:7008
@@ -45,6 +49,9 @@ tenant:
   prefix: foobar-
   label_remove: false
   default: default
+  label_list:
+    - "__foo__"
+    - "__bar__"
 `
 )
 

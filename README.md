@@ -124,6 +124,12 @@ tenant:
   # env: CT_TENANT_LABEL
   label: tenant
 
+  # List of labels examined for tenant information. If set takes precedent over `label`
+  # env: CT_TENANT_LABEL_LIST
+  label_list:
+    - tenant
+    - other_tenant
+
   # Whether to remove the tenant label from the request
   # env: CT_TENANT_LABEL_REMOVE
   label_remove: true

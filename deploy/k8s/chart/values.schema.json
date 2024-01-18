@@ -260,6 +260,16 @@
               "description": "Which label to look for the tenant information",
               "default": "tenant"
             },
+            "label_list": {
+              "type": "array",
+              "title": "LabelList",
+              "description": "List of labels examined for tenant information. If set takes precedent over `label`",
+              "items": {
+                "type": "string",
+                "title": "LabelListItems",
+                "default": ""
+              }
+            },
             "prefix": {
               "type": "string",
               "title": "Prefix",
