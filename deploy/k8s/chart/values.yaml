@@ -101,6 +101,7 @@ config:
     # (env: `CT_TENANT_LABEL`)
     label: tenant
     # -- List of labels examined for tenant information. If set takes precedent over `label`
+    # (env: `CT_TENANT_LABEL_LIST`)
     label_list: []
     # -- Optional hard-coded prefix with delimeter for all tenant values.
     # Delimeters allowed for use:
@@ -109,6 +110,9 @@ config:
     prefix: ""
     # -- If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
     # Will be automatically suffixed with a `-` character.
+    # Example:
+    #   Prometheus forwards metrics with `X-Scope-OrgID: Prom-A` set in the inbound request.
+    #   This would result in the tenant prefix being set to `Prom-A-`.
     # (env: `CT_TENANT_PREFIX_PREFER_SOURCE`)
     prefix_prefer_source: false
     # -- Whether to remove the tenant label from the request

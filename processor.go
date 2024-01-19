@@ -170,11 +170,10 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
-	tenantPrefix := p.cfg.Tenant.Prefix
-
 	if p.cfg.Tenant.PrefixPreferSource {
-		if string(ctx.Request.Header.Peek("X-Scope-OrgID")) != "" {
-			tenantPrefix = string(ctx.Request.Header.Peek("X-Scope-OrgID")) + "-"
+		sourceTenantPrefix := string(ctx.Request.Header.Peek(p.cfg.Tenant.Header))
+		if sourceTenantPrefix != "" {
+			p.cfg.Tenant.Prefix = sourceTenantPrefix + "-"
 		}
 	}
 
@@ -185,7 +184,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-				r := p.send(clientIP, reqID, tenantPrefix, p.cfg.Tenant.Default, wrReqIn)
+				r := p.send(clientIP, reqID, p.cfg.Tenant.Default, wrReqIn)
 				if r.err != nil {
 					ctx.Error(err.Error(), fh.StatusInternalServerError)
 					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
@@ -210,7 +209,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 
 	metricTenant := ""
 	var errs *me.Error
-	results := p.dispatch(clientIP, reqID, tenantPrefix, m)
+	results := p.dispatch(clientIP, reqID, m)
 
 	code, body := 0, []byte("Ok")
 
@@ -312,7 +311,7 @@ func (p *processor) marshal(wr *prompb.WriteRequest) (bufOut []byte, err error) 
 	return snappy.Encode(nil, b), nil
 }
 
-func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, m map[string]*prompb.WriteRequest) (res []result) {
+func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, m map[string]*prompb.WriteRequest) (res []result) {
 	var wg sync.WaitGroup
 	res = make([]result, len(m))
 
@@ -323,7 +322,7 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, tenantPrefix st
 		go func(idx int, tenant string, wrReq *prompb.WriteRequest) {
 			defer wg.Done()
 
-			r := p.send(clientIP, reqID, tenantPrefix, tenant, wrReq)
+			r := p.send(clientIP, reqID, tenant, wrReq)
 			res[idx] = r
 		}(i, tenant, wrReq)
 
@@ -368,7 +367,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 	return
 }
 
-func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, tenant string, wr *prompb.WriteRequest) (r result) {
+func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (r result) {
 	start := time.Now()
 	r.tenant = tenant
 
@@ -386,7 +385,7 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string
 		return
 	}
 
-	p.fillRequestHeaders(clientIP, reqID, tenantPrefix, tenant, req)
+	p.fillRequestHeaders(clientIP, reqID, tenant, req)
 
 	if p.auth.egressHeader != nil {
 		req.Header.SetBytesV("Authorization", p.auth.egressHeader)
@@ -410,14 +409,14 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string
 }
 
 func (p *processor) fillRequestHeaders(
-	clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, tenant string, req *fh.Request) {
+	clientIP net.Addr, reqID uuid.UUID, tenant string, req *fh.Request) {
 	req.Header.Set("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
 	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
-	if tenantPrefix != "" {
-		tenant = tenantPrefix + tenant
+	if p.cfg.Tenant.Prefix != "" {
+		tenant = p.cfg.Tenant.Prefix + tenant
 	}
 	req.Header.Set(p.cfg.Tenant.Header, tenant)
 }
