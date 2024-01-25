@@ -25,6 +25,7 @@ tenant:
     - tenant
     - other_tenant
   prefix: ""
+  prefix_prefer_source: false
   label_remove: true
   header: X-Scope-OrgID
   default: ""

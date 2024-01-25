@@ -1,8 +1,8 @@
 apiVersion: v2
 description: A Helm Chart for cortex-tenant
 name: cortex-tenant
-version: 0.4.1 # This is the chart version
-appVersion: 1.12.4 # version number of the application being deployed.
+version: 0.4.2 # This is the chart version
+appVersion: 1.12.5 # version number of the application being deployed.
 type: application
 sources:
   - https://github.com/blind-oracle/cortex-tenant

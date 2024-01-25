@@ -30,6 +30,7 @@ data:
         {{- . | toYaml | nindent 8 }}
       {{- end }}
       prefix: {{ .Values.config.tenant.prefix }}
+      prefix_prefer_source: {{ .Values.config.tenant.prefix_prefer_source }}
       label_remove: {{ .Values.config.tenant.label_remove }}
       header: {{ .Values.config.tenant.header }}
       default: {{ .Values.config.tenant.default }}

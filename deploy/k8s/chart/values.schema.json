@@ -275,6 +275,12 @@
               "title": "Prefix",
               "description": "Optional hard-coded prefix with delimeter for all tenant values"
             },
+            "prefix_prefer_source": {
+              "type": "boolean",
+              "title": "Prefix Prefer Source",
+              "description": "If true will use the tenant ID of the inbound request as the prefix of the new tenant id.",
+              "default": false
+            },
             "label_remove": {
               "type": "boolean",
               "title": "Label Remove",

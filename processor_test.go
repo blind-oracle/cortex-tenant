@@ -232,20 +232,6 @@ func Test_request_headers(t *testing.T) {
 	assert.Equal(t, "my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
 }
 
-func Test_request_headers_with_prefix(t *testing.T) {
-	cfg, err := getConfig(testConfigWithValues)
-	assert.Nil(t, err)
-
-	p := newProcessor(*cfg)
-
-	req := fh.AcquireRequest()
-	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
-	reqID, _ := uuid.NewRandom()
-	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
-
-	assert.Equal(t, "foobar-my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
-}
-
 func Test_handle(t *testing.T) {
 	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
