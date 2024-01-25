@@ -186,7 +186,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-				r := p.send(clientIP, reqID, tenantPrefix, p.cfg.Tenant.Default, wrReqIn)
+				r := p.send(clientIP, reqID, tenantPrefix+p.cfg.Tenant.Default, wrReqIn)
 				if r.err != nil {
 					ctx.Error(err.Error(), fh.StatusInternalServerError)
 					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
@@ -321,12 +321,12 @@ func (p *processor) dispatch(clientIP net.Addr, reqID uuid.UUID, tenantPrefix st
 	for tenant, wrReq := range m {
 		wg.Add(1)
 
-		go func(idx int, tenantPrefix string, tenant string, wrReq *prompb.WriteRequest) {
+		go func(idx int, tenant string, wrReq *prompb.WriteRequest) {
 			defer wg.Done()
 
-			r := p.send(clientIP, reqID, tenantPrefix, tenant, wrReq)
+			r := p.send(clientIP, reqID, tenant, wrReq)
 			res[idx] = r
-		}(i, tenantPrefix, tenant, wrReq)
+		}(i, tenantPrefix+tenant, wrReq)
 
 		i++
 	}
@@ -369,7 +369,7 @@ func (p *processor) processTimeseries(ts *prompb.TimeSeries) (tenant string, err
 	return
 }
 
-func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, tenant string, wr *prompb.WriteRequest) (r result) {
+func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenant string, wr *prompb.WriteRequest) (r result) {
 	start := time.Now()
 	r.tenant = tenant
 
@@ -385,10 +385,6 @@ func (p *processor) send(clientIP net.Addr, reqID uuid.UUID, tenantPrefix string
 	if err != nil {
 		r.err = err
 		return
-	}
-
-	if tenantPrefix != "" {
-		tenant = tenantPrefix + tenant
 	}
 
 	p.fillRequestHeaders(clientIP, reqID, tenant, req)
