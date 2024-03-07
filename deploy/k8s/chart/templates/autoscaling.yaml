@@ -1,32 +1,30 @@
-{{- if .Values.autoscaling.enabled -}}
+{{- with .Values.autoscaling }}
+{{- if .enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "cortex-tenant.fullname" . }}
+  name: {{ include "cortex-tenant.fullname" $ }}
   labels:
-    {{- include "cortex-tenant.labels" . | nindent 4 }}
+    {{- include "cortex-tenant.labels" $ | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "cortex-tenant.fullname" . }}
-  minReplicas: {{ .Values.autoscaling.minReplica }}
-  maxReplicas: {{ .Values.autoscaling.maxReplica }}
+    name: {{ include "cortex-tenant.fullname" $ }}
+  minReplicas: {{ .minReplica }}
+  maxReplicas: {{ .maxReplica }}
   metrics:
-  {{- with .Values.autoscaling.targetMemoryAverageValue }}
     - type: Resource
       resource:
         name: memory
         target:
-          type: AverageValue
-          averageValue: {{ . }}
-  {{- end }}
-  {{- with .Values.autoscaling.targetCPUUtilizationPercentage }}
+          type: Utilization
+          averageUtilization: {{ .targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ . }}
-  {{- end }}
+          averageUtilization: {{ .targetCPUUtilizationPercentage }}
+{{- end }}
 {{- end }}

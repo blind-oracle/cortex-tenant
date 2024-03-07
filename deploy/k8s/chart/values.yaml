@@ -20,19 +20,19 @@ service:
   targetPort: 8080
 
 # -- Number of replicas. Ignored if `autoscaling.enabled` is true
-replicas: 1
+replicas: 2
 
 autoscaling:
   # -- If enabled, HorizontalPodAutoscaler resources are created
-  enabled: true
+  enabled: false
   # -- Min number of pod replica autoscaled
   minReplica: 1
   # -- Max number of pod replica autoscaled
   maxReplica: 3
-  # -- Target memory average value for autoscaling
-  targetMemoryAverageValue: 100Mi
+  # -- Target memory utilization percentage for autoscaling
+  targetMemoryUtilizationPercentage: 60
   # -- Target CPU utilization percentage for autoscaling
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 60
 
 # -- Additional environment variables
 envs:
