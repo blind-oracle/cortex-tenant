@@ -59,7 +59,7 @@ A Helm Chart for cortex-tenant
 | resources.requests | object | `{"cpu":"100m","memory":"128Mi"}` | Resources requests |
 | securityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
 | service.port | int | `8080` | The port on which the service listens for traffic |
-| service.targetPort | int | `8080` |  |
+| service.targetPort | int | `8080` | The target port to which traffic is forwarded |
 | service.type | string | `"ClusterIP"` | The type of service |
 | serviceMonitor.annotations | object | `{}` | ServiceMonitor annotations |
 | serviceMonitor.enabled | bool | `false` | If enabled, ServiceMonitor resources for Prometheus Operator are created |
@@ -73,7 +73,7 @@ A Helm Chart for cortex-tenant
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor will use http by default, but you can pick https as well |
 | serviceMonitor.scrapeTimeout | string | `nil` | ServiceMonitor scrape timeout in Go duration format (e.g. 15s) |
 | serviceMonitor.targetLabels | list | `[]` | ServiceMonitor will add labels from the service to the Prometheus metric https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#servicemonitorspec |
-| serviceMonitor.targetPort | int | `9090` |  |
+| serviceMonitor.targetPort | int | `9090` | ServiceMonitor targetPort |
 | serviceMonitor.tlsConfig | string | `nil` | ServiceMonitor will use these tlsConfig settings to make the health check requests |
 | tolerations | list | `[]` | [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/) |
 

@@ -16,7 +16,7 @@ service:
   type: ClusterIP
   # -- The port on which the service listens for traffic
   port: 8080
-  # The target port to which traffic is forwarded
+  # -- The target port to which traffic is forwarded
   targetPort: 8080
 
 # -- Number of replicas. Ignored if `autoscaling.enabled` is true
@@ -178,7 +178,7 @@ serviceMonitor:
   enabled: false
   # -- Alternative namespace for ServiceMonitor resources
   namespace: null
-  # Service targetPort
+  # -- ServiceMonitor targetPort
   targetPort: 9090
   # -- Namespace selector for ServiceMonitor resources
   namespaceSelector: {}
