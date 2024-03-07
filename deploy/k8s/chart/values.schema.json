@@ -537,6 +537,52 @@
           }
         }
       }
+    },
+    "livenessProbe": {
+      "$ref": "#/definitions/probe",
+      "title": "Liveness Probe"
+    },
+    "readinessProbe": {
+      "$ref": "#/definitions/probe",
+      "title": "Readiness Probe"
+    }
+  },
+  "definitions": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "description": "Enable the probe"
+        },
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial Delay Seconds",
+          "description": "Number of seconds after the container has started before liveness or readiness probes are initiated"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout Seconds",
+          "description": "Number of seconds after which the probe times out"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period Seconds",
+          "description": "How often (in seconds) to perform the probe"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success Threshold",
+          "description": "Minimum consecutive successes for the probe to be considered successful after having failed"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure Threshold",
+          "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded"
+        }
+      }
     }
   }
 }

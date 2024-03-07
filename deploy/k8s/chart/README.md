@@ -47,6 +47,12 @@ A Helm Chart for cortex-tenant
 | image.pullPolicy | string | `"IfNotPresent"` | Policy when pulling images |
 | image.repository | string | `"ghcr.io/blind-oracle/cortex-tenant"` | Repository to pull the image |
 | image.tag | string | `""` | Overrides the image tag (default is `.Chart.appVersion`) |
+| livenessProbe.enabled | bool | `false` | Enable the liveness probe |
+| livenessProbe.failureThreshold | int | `3` | Liveness probe failure threshold |
+| livenessProbe.initialDelaySeconds | int | `5` | Initial delay seconds |
+| livenessProbe.periodSeconds | int | `20` | Liveness probe period |
+| livenessProbe.successThreshold | int | `1` | Liveness probe success threshold |
+| livenessProbe.timeoutSeconds | int | `5` | Liveness probe timeout |
 | nameOverride | string | `nil` | Application name override |
 | nodeSelector | object | `{}` | [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node) |
 | podAnnotations | object | `{}` | Annotations for pods |
@@ -54,6 +60,12 @@ A Helm Chart for cortex-tenant
 | podDisruptionBudget.minAvailable | int | `1` | Minimum number of pods that must remain scheduled |
 | podSecurityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
 | podTopologySpreadConstraints | list | `[]` | [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) |
+| readinessProbe.enabled | bool | `false` | Enable the readiness probe |
+| readinessProbe.failureThreshold | int | `3` | Readiness probe failure threshold |
+| readinessProbe.initialDelaySeconds | int | `10` | Initial delay seconds |
+| readinessProbe.periodSeconds | int | `10` | Readiness probe period |
+| readinessProbe.successThreshold | int | `1` | Readiness probe success threshold |
+| readinessProbe.timeoutSeconds | int | `5` | Readiness probe timeout |
 | replicas | int | `2` | Number of replicas. Ignored if `autoscaling.enabled` is true |
 | resources.limits | object | `{"memory":"256Mi"}` | Resources limits |
 | resources.requests | object | `{"cpu":"100m","memory":"128Mi"}` | Resources requests |
