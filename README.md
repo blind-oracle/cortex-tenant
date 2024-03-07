@@ -222,7 +222,7 @@ ADD my-config.yml /data/cortex-tenant.yml
 
 #### Using manifests
 
-`deploy/k8s/manifests` directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
+[`deploy/k8s/manifests`](deploy/k8s/manifests) directory contains the deployment, service and configmap manifest files for deploying this on Kubernetes. You can overwrite the default config by editing the configuration parameters in the configmap manifest.
 
 ```bash
 kubectl apply -f deploy/k8s/manifests/cortex-tenant-deployment.yaml
@@ -232,9 +232,23 @@ kubectl apply -f deploy/k8s/manifests/config-file-configmap.yml
 
 #### Using a Helm Chart
 
-`deploy/k8s/chart` directory contains a chart for deploying this on Kubernetes. You can use `deploy/k8s/chart/testing` directory to test the deployment using helmfile.
+[`deploy/k8s/chart`](deploy/k8s/chart) directory contains a chart for deploying this on Kubernetes.
+
+```bash
+helm repo add cortex-tenant https://blind-oracle.github.io/cortex-tenant
+helm install cortex-tenant cortex-tenant/cortex-tenant
+```
+
+You can use [`deploy/k8s/chart/testing`](deploy/k8s/chart/testing) directory to test the deployment using helmfile.
 
 ```bash
 helmfile -f deploy/k8s/chart/testing/helmfile.yaml template
 helmfile -f deploy/k8s/chart/testing/helmfile.yaml apply
+```
+
+#### Updating chart version
+
+```bash
+helm package ./deploy/k8s/chart -d docs
+TZ=UTC helm repo index ./docs
 ```
