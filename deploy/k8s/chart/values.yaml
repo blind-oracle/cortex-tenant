@@ -16,23 +16,23 @@ service:
   type: ClusterIP
   # -- The port on which the service listens for traffic
   port: 8080
-  # The target port to which traffic is forwarded
+  # -- The target port to which traffic is forwarded
   targetPort: 8080
 
 # -- Number of replicas. Ignored if `autoscaling.enabled` is true
-replicas: 1
+replicas: 2
 
 autoscaling:
   # -- If enabled, HorizontalPodAutoscaler resources are created
-  enabled: true
+  enabled: false
   # -- Min number of pod replica autoscaled
   minReplica: 1
   # -- Max number of pod replica autoscaled
   maxReplica: 3
-  # -- Target memory average value for autoscaling
-  targetMemoryAverageValue: 100Mi
+  # -- Target memory utilization percentage for autoscaling
+  targetMemoryUtilizationPercentage: 60
   # -- Target CPU utilization percentage for autoscaling
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 60
 
 # -- Additional environment variables
 envs:
@@ -142,6 +142,34 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+livenessProbe:
+  # -- Enable the liveness probe
+  enabled: false
+  # -- Initial delay seconds
+  initialDelaySeconds: 5
+  # -- Liveness probe period
+  periodSeconds: 20
+  # -- Liveness probe timeout
+  timeoutSeconds: 5
+  # -- Liveness probe success threshold
+  successThreshold: 1
+  # -- Liveness probe failure threshold
+  failureThreshold: 3
+
+readinessProbe:
+  # -- Enable the readiness probe
+  enabled: false
+  # -- Initial delay seconds
+  initialDelaySeconds: 10
+  # -- Readiness probe period
+  periodSeconds: 10
+  # -- Readiness probe timeout
+  timeoutSeconds: 5
+  # -- Readiness probe success threshold
+  successThreshold: 1
+  # -- Readiness probe failure threshold
+  failureThreshold: 3
+
 podDisruptionBudget:
   # -- If enabled, PodDisruptionBudget resources are created
   enabled: true
@@ -178,7 +206,7 @@ serviceMonitor:
   enabled: false
   # -- Alternative namespace for ServiceMonitor resources
   namespace: null
-  # Service targetPort
+  # -- ServiceMonitor targetPort
   targetPort: 9090
   # -- Namespace selector for ServiceMonitor resources
   namespaceSelector: {}

@@ -1,6 +1,6 @@
 # cortex-tenant
 
-![Version: 0.4.2](https://img.shields.io/badge/Version-0.4.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.13.0](https://img.shields.io/badge/AppVersion-1.13.0-informational?style=flat-square)
+![Version: 0.5.0](https://img.shields.io/badge/Version-0.5.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.13.0](https://img.shields.io/badge/AppVersion-1.13.0-informational?style=flat-square)
 
 A Helm Chart for cortex-tenant
 
@@ -14,11 +14,11 @@ A Helm Chart for cortex-tenant
 |-----|------|---------|-------------|
 | affinity | object | `{}` | [Affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) |
 | annotations | object | `{}` | Annotations for deployment |
-| autoscaling.enabled | bool | `true` | If enabled, HorizontalPodAutoscaler resources are created |
+| autoscaling.enabled | bool | `false` | If enabled, HorizontalPodAutoscaler resources are created |
 | autoscaling.maxReplica | int | `3` | Max number of pod replica autoscaled |
 | autoscaling.minReplica | int | `1` | Min number of pod replica autoscaled |
-| autoscaling.targetCPUUtilizationPercentage | int | `50` | Target CPU utilization percentage for autoscaling |
-| autoscaling.targetMemoryAverageValue | string | `"100Mi"` | Target memory average value for autoscaling |
+| autoscaling.targetCPUUtilizationPercentage | int | `60` | Target CPU utilization percentage for autoscaling |
+| autoscaling.targetMemoryUtilizationPercentage | int | `60` | Target memory utilization percentage for autoscaling |
 | config.auth.enabled | bool | `false` | Egress HTTP basic auth -> add `Authentication` header to outgoing requests |
 | config.auth.existingSecret | string | `nil` | Secret should pass the `CT_AUTH_EGRESS_USERNAME` and `CT_AUTH_EGRESS_PASSWORD` env variables |
 | config.auth.password | string | `nil` | Password (env: `CT_AUTH_EGRESS_PASSWORD`) |
@@ -47,6 +47,12 @@ A Helm Chart for cortex-tenant
 | image.pullPolicy | string | `"IfNotPresent"` | Policy when pulling images |
 | image.repository | string | `"ghcr.io/blind-oracle/cortex-tenant"` | Repository to pull the image |
 | image.tag | string | `""` | Overrides the image tag (default is `.Chart.appVersion`) |
+| livenessProbe.enabled | bool | `false` | Enable the liveness probe |
+| livenessProbe.failureThreshold | int | `3` | Liveness probe failure threshold |
+| livenessProbe.initialDelaySeconds | int | `5` | Initial delay seconds |
+| livenessProbe.periodSeconds | int | `20` | Liveness probe period |
+| livenessProbe.successThreshold | int | `1` | Liveness probe success threshold |
+| livenessProbe.timeoutSeconds | int | `5` | Liveness probe timeout |
 | nameOverride | string | `nil` | Application name override |
 | nodeSelector | object | `{}` | [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node) |
 | podAnnotations | object | `{}` | Annotations for pods |
@@ -54,12 +60,18 @@ A Helm Chart for cortex-tenant
 | podDisruptionBudget.minAvailable | int | `1` | Minimum number of pods that must remain scheduled |
 | podSecurityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
 | podTopologySpreadConstraints | list | `[]` | [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) |
-| replicas | int | `1` | Number of replicas. Ignored if `autoscaling.enabled` is true |
+| readinessProbe.enabled | bool | `false` | Enable the readiness probe |
+| readinessProbe.failureThreshold | int | `3` | Readiness probe failure threshold |
+| readinessProbe.initialDelaySeconds | int | `10` | Initial delay seconds |
+| readinessProbe.periodSeconds | int | `10` | Readiness probe period |
+| readinessProbe.successThreshold | int | `1` | Readiness probe success threshold |
+| readinessProbe.timeoutSeconds | int | `5` | Readiness probe timeout |
+| replicas | int | `2` | Number of replicas. Ignored if `autoscaling.enabled` is true |
 | resources.limits | object | `{"memory":"256Mi"}` | Resources limits |
 | resources.requests | object | `{"cpu":"100m","memory":"128Mi"}` | Resources requests |
 | securityContext | object | `{}` | [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) |
 | service.port | int | `8080` | The port on which the service listens for traffic |
-| service.targetPort | int | `8080` |  |
+| service.targetPort | int | `8080` | The target port to which traffic is forwarded |
 | service.type | string | `"ClusterIP"` | The type of service |
 | serviceMonitor.annotations | object | `{}` | ServiceMonitor annotations |
 | serviceMonitor.enabled | bool | `false` | If enabled, ServiceMonitor resources for Prometheus Operator are created |
@@ -73,9 +85,9 @@ A Helm Chart for cortex-tenant
 | serviceMonitor.scheme | string | `"http"` | ServiceMonitor will use http by default, but you can pick https as well |
 | serviceMonitor.scrapeTimeout | string | `nil` | ServiceMonitor scrape timeout in Go duration format (e.g. 15s) |
 | serviceMonitor.targetLabels | list | `[]` | ServiceMonitor will add labels from the service to the Prometheus metric https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#servicemonitorspec |
-| serviceMonitor.targetPort | int | `9090` |  |
+| serviceMonitor.targetPort | int | `9090` | ServiceMonitor targetPort |
 | serviceMonitor.tlsConfig | string | `nil` | ServiceMonitor will use these tlsConfig settings to make the health check requests |
 | tolerations | list | `[]` | [Taints and Tolerations](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/) |
 
 ----------------------------------------------
-Autogenerated from chart metadata using [helm-docs v1.12.0](https://github.com/norwoodj/helm-docs/releases/v1.12.0)
+Autogenerated from chart metadata using [helm-docs v1.13.1](https://github.com/norwoodj/helm-docs/releases/v1.13.1)

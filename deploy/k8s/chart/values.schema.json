@@ -52,6 +52,7 @@
     "service": {
       "type": "object",
       "title": "Service",
+      "additionalProperties": false,
       "properties": {
         "type": {
           "type": "string",
@@ -86,6 +87,7 @@
     "autoscaling": {
       "type": "object",
       "title": "Autoscaling",
+      "additionalProperties": false,
       "properties": {
         "enabled": {
           "type": "boolean",
@@ -98,23 +100,23 @@
           "description": "Minimum number of replicas",
           "default": 1
         },
-        "maxReplicas": {
+        "maxReplica": {
           "type": "integer",
           "title": "Max replicas",
           "description": "Maximum number of replicas",
-          "default": 2
+          "default": 3
         },
         "targetCPUUtilizationPercentage": {
           "type": "integer",
           "title": "Target CPU utilization percentage",
           "description": "Target CPU utilization percentage",
-          "default": 50
+          "default": 60
         },
-        "targetMemoryAverageValue": {
-          "type": "string",
-          "title": "Target memory average value",
-          "description": "Target memory average value",
-          "default": "100Mi"
+        "targetMemoryUtilizationPercentage": {
+          "type": "integer",
+          "title": "Target memory utilization percentage",
+          "description": "Target memory utilization percentage",
+          "default": 60
         }
       }
     },
@@ -147,6 +149,7 @@
       "type": "object",
       "title": "Config",
       "description": "Configuration for the cortex-tenant",
+      "additionalProperties": false,
       "properties": {
         "listen": {
           "type": "string",
@@ -532,6 +535,52 @@
               "title": "Rules"
             }
           }
+        }
+      }
+    },
+    "livenessProbe": {
+      "$ref": "#/definitions/probe",
+      "title": "Liveness Probe"
+    },
+    "readinessProbe": {
+      "$ref": "#/definitions/probe",
+      "title": "Readiness Probe"
+    }
+  },
+  "definitions": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled",
+          "description": "Enable the probe"
+        },
+        "initialDelaySeconds": {
+          "type": "integer",
+          "title": "Initial Delay Seconds",
+          "description": "Number of seconds after the container has started before liveness or readiness probes are initiated"
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "title": "Timeout Seconds",
+          "description": "Number of seconds after which the probe times out"
+        },
+        "periodSeconds": {
+          "type": "integer",
+          "title": "Period Seconds",
+          "description": "How often (in seconds) to perform the probe"
+        },
+        "successThreshold": {
+          "type": "integer",
+          "title": "Success Threshold",
+          "description": "Minimum consecutive successes for the probe to be considered successful after having failed"
+        },
+        "failureThreshold": {
+          "type": "integer",
+          "title": "Failure Threshold",
+          "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded"
         }
       }
     }
