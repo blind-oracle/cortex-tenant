@@ -10,7 +10,7 @@ RELEASE := 1
 GO ?= go
 OUT := .out
 
-all: rpm
+all: rpm deb
 
 build:
 	go test ./... && \

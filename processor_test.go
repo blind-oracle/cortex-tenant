@@ -3,13 +3,16 @@ package main
 import (
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/google/uuid"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	fh "github.com/valyala/fasthttp"
 	fhu "github.com/valyala/fasthttp/fasthttputil"
@@ -24,9 +27,31 @@ log_level: debug
 timeout: 50ms
 timeout_shutdown: 100ms
 
+max_conns_per_host: 64
+
 tenant:
   label_remove: false
   default: default
+  label_list:
+    - "__tenant__"
+    - "__foo__"
+    - "__bar__"
+`
+	testConfigWithValues = `listen: 0.0.0.0:8080
+listen_pprof: 0.0.0.0:7008
+
+target: http://127.0.0.1:9091/receive
+log_level: debug
+timeout: 50ms
+timeout_shutdown: 100ms
+
+tenant:
+  prefix: foobar-
+  label_remove: false
+  default: default
+  label_list:
+    - "__foo__"
+    - "__bar__"
 `
 )
 
@@ -118,8 +143,26 @@ var (
 	}
 )
 
+func getConfig(contents string) (*config, error) {
+	err := os.WriteFile("config_test.yml", []byte(contents), 0o666)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := configLoad("config_test.yml")
+	if err != nil {
+		return nil, err
+	}
+
+	if err = os.Remove("config_test.yml"); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
 func createProcessor() (*processor, error) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +196,44 @@ func Test_config(t *testing.T) {
 	assert.Equal(t, 10, cfg.Concurrency)
 }
 
+// Check if Prefix empty by default
+func Test_config_is_prefix_empty_by_default(t *testing.T) {
+	cfg, err := configLoad("config.yml")
+	assert.Nil(t, err)
+	assert.Equal(t, "", cfg.Tenant.Prefix)
+}
+
+// Check if Prefix empty by default
+func Test_config_is_prefix_empty_if_not_set(t *testing.T) {
+	cfg, err := getConfig(testConfig)
+	assert.Nil(t, err)
+	assert.Equal(t, "", cfg.Tenant.Prefix)
+}
+
+// Check if Prefix filled with value
+func Test_config_is_prefix_filled(t *testing.T) {
+	cfg, err := getConfig(testConfigWithValues)
+	assert.Nil(t, err)
+	assert.Equal(t, "foobar-", cfg.Tenant.Prefix)
+}
+
+func Test_request_headers(t *testing.T) {
+	cfg, err := getConfig(testConfig)
+	assert.Nil(t, err)
+
+	p := newProcessor(*cfg)
+
+	req := fh.AcquireRequest()
+	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
+	reqID, _ := uuid.NewRandom()
+	p.fillRequestHeaders(clientIP, reqID, "my-tenant", req)
+
+	assert.Equal(t, "snappy", string(req.Header.Peek("Content-Encoding")))
+	assert.Equal(t, "my-tenant", string(req.Header.Peek("X-Scope-OrgID")))
+}
+
 func Test_handle(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 
 	cfg.pipeIn = fhu.NewInmemoryListener()
@@ -175,8 +254,11 @@ func Test_handle(t *testing.T) {
 	assert.Nil(t, err)
 
 	s := &fh.Server{
-		Handler: sinkHandler,
+		Handler: sinkHandlerError,
 	}
+	// client.Do behaviour changed in https://github.com/valyala/fasthttp/pull/1346
+	// Don't run requests in a separate Goroutine anymore.
+	go s.Serve(cfg.pipeOut)
 
 	c := &fh.Client{
 		Dial: func(a string) (net.Conn, error) {
@@ -197,8 +279,7 @@ func Test_handle(t *testing.T) {
 
 	assert.Equal(t, 500, resp.StatusCode())
 
-	go s.Serve(cfg.pipeOut)
-
+	s.Handler = sinkHandler
 	// Success 1
 	req.Reset()
 	resp.Reset()
@@ -297,7 +378,7 @@ func Test_handle(t *testing.T) {
 }
 
 func Test_processTimeseries(t *testing.T) {
-	cfg, err := configParse([]byte(testConfig))
+	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 	cfg.Tenant.LabelRemove = true
 
@@ -364,4 +445,35 @@ func Benchmark_marshal(b *testing.B) {
 		buf, _ := p.marshal(testWRQ)
 		_, _ = p.unmarshal(buf)
 	}
+}
+
+func TestRemoveOrdered(t *testing.T) {
+	l := []prompb.Label{
+		{
+			Name:  "aaa",
+			Value: "bbb",
+		},
+	}
+
+	l = removeOrdered(l, 0)
+	require.Equal(t, []prompb.Label{}, l)
+
+	l = []prompb.Label{
+		{
+			Name:  "aaa",
+			Value: "bbb",
+		},
+		{
+			Name:  "ccc",
+			Value: "ddd",
+		},
+	}
+	l = removeOrdered(l, 0)
+	require.Equal(t, []prompb.Label{
+		{
+			Name:  "ccc",
+			Value: "ddd",
+		},
+	}, l)
+
 }

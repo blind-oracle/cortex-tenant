@@ -2,18 +2,21 @@
 name: docker
 
 on:
-  # publish on releases, e.g. v2.1.13 (image tagged as "2.1.13" - "v" prefix is removed)
   release:
     types:
       - published
-      
+
+  push:
+    branches:
+      - master
+
   workflow_dispatch:
   
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: macbre/push-to-ghcr@master
         with:
           image_name: ${{ github.repository }}

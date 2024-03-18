@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     release: cortex-tenant
+    app.kubernetes.io/name: cortex-tenant
   name: cortex-tenant
   namespace: cortex
 spec:

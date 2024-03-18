@@ -1,6 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  labels:
+    app.kubernetes.io/name: cortex-tenant
   name: cortex-tenant-configmap
   namespace: cortex
 data:
@@ -25,10 +27,28 @@ data:
     # Since metadata requests have no timeseries in them - we cannot divide them into tenants
     # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
     metadata: false
-    
+    # Address where metrics are available
+    # env: CT_LISTEN_METRICS_ADDRESS
+    listen_metrics_address: 0.0.0.0:9090
+
+    # If true, then a label with the tenant’s name will be added to the metrics
+    # env: CT_METRICS_INCLUDE_TENANT
+    metrics_include_tenant: true
+
     tenant:
       # Which label to look for the tenant information
       label: tenant
+      # Optional hard-coded prefix with delimeter for all tenant values.
+      # Delimeters allowed for use:
+      # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+      prefix: ""
+      # If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
+      # Will be automatically suffixed with a `-` character.
+      # Example:
+      #   Prometheus forwards metrics with `X-Scope-OrgID: Prom-A` set in the inbound request.
+      #   This would result in the tenant prefix being set to `Prom-A-`.
+      # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+      prefix_prefer_source: false
       # Whether to remove the tenant label from the request
       label_remove: false
       # To which header to add the tenant ID

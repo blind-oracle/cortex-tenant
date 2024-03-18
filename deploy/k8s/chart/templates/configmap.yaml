@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cortex-tenant.fullname" . }}-configmap
+  labels:
+    {{- include "cortex-tenant.labels" . | nindent 4 }}
+data:
+  cortex-tenant.yml: |-
+    listen: {{ .Values.config.listen }}
+    listen_pprof: {{ .Values.config.listen_pprof }}
+    target: {{ .Values.config.target }}
+    enable_ipv6: {{ .Values.config.enable_ipv6 }}
+    log_level: {{ .Values.config.log_level }}
+    timeout: {{ .Values.config.timeout }}
+    timeout_shutdown: {{ .Values.config.timeout_shutdown }}
+    concurrency: {{ .Values.config.concurrency }}
+    metadata: {{ .Values.config.metadata }}
+    log_response_errors: {{ .Values.config.log_response_errors }}
+    max_connection_duration: {{ .Values.config.max_connection_duration }}
+    {{- if .Values.config.auth.enabled }}
+    auth:
+      egress:
+        username: {{ .Values.config.auth.username }}
+        password: {{ .Values.config.auth.password }}
+    {{- end }}
+    tenant:
+      label: {{ .Values.config.tenant.label }}
+      {{- with .Values.config.tenant.label_list }}
+      label_list:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      prefix: {{ .Values.config.tenant.prefix }}
+      prefix_prefer_source: {{ .Values.config.tenant.prefix_prefer_source }}
+      label_remove: {{ .Values.config.tenant.label_remove }}
+      header: {{ .Values.config.tenant.header }}
+      default: {{ .Values.config.tenant.default }}
+      accept_all: {{ .Values.config.tenant.accept_all }}
