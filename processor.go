@@ -188,7 +188,7 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
 				r := p.send(clientIP, reqID, tenantPrefix+p.cfg.Tenant.Default, wrReqIn)
 				if r.err != nil {
-					ctx.Error(err.Error(), fh.StatusInternalServerError)
+					ctx.Error(r.err.Error(), fh.StatusInternalServerError)
 					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
 					return
 				}
