@@ -1,0 +1,78 @@
+name: Release
+
+on: 
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Install dependencies
+      run: |
+        go mod download
+
+    - name: Run Unit tests
+      run: |
+        go test -race -covermode atomic -coverprofile=cortex-tenant.coverprofile ./...
+
+    - name: Build
+      run: |
+        go build ./...
+
+    - name: Strip
+      run: /usr/bin/strip cortex-tenant
+
+    - name: Create DEB package root
+      run: |
+        mkdir -p .debpkg/usr/sbin
+        mkdir -p .debpkg/etc/systemd/system
+        mkdir -p .debpkg/etc/default
+
+        cp cortex-tenant .debpkg/usr/sbin
+        cp deploy/cortex-tenant.deb.service .debpkg/etc/systemd/system
+        cp deploy/cortex-tenant.env .debpkg/etc/default/cortex-tenant
+
+    - name: Create RPM package root
+      run: |
+        mkdir -p .rpmpkg/usr/sbin
+        mkdir -p .rpmpkg/etc/systemd/system
+        mkdir -p .rpmpkg/etc/sysconfig
+
+        cp cortex-tenant .rpmpkg/usr/sbin
+        cp deploy/cortex-tenant.rpm.service .rpmpkg/etc/systemd/system
+        cp deploy/cortex-tenant.env .rpmpkg/etc/sysconfig/cortex-tenant
+
+    - uses: jiro4989/build-deb-action@v3
+      with:
+        package: cortex-tenant
+        package_root: .debpkg
+        maintainer: "Igor Novgorodov <igor@novg.net>"
+        version: ${{ github.ref }}
+        arch: 'amd64'
+        desc: "Cortex-Tenant Service"
+        homepage: "https://github.com/blind-oracle/cortex-tenant"
+
+    - uses: jiro4989/build-rpm-action@v2
+      with:
+        package: cortex-tenant
+        package_root: .rpmpkg
+        maintainer: "Igor Novgorodov <igor@novg.net>"
+        version: ${{ github.ref }}
+        arch: 'x86_64'
+        summary: "Cortex-Tenant Service"
+        homepage: "https://github.com/blind-oracle/cortex-tenant"
+
+    - uses: ncipollo/release-action@v1
+      with:
+        makeLatest: true
+        artifacts: "cortex-tenant,*.deb,*.rpm"
+        body: "Cortex-Tenant release"
