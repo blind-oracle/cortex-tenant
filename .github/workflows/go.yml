@@ -27,7 +27,7 @@ jobs:
         go test -race -covermode atomic -coverprofile=cortex-tenant.coverprofile ./...
 
     - name: Install goveralls
-      run: go get github.com/mattn/goveralls
+      run: go install github.com/mattn/goveralls@latest
 
     - name: Send coverage
       env:
