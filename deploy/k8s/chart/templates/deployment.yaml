@@ -24,13 +24,13 @@ spec:
         {{- end }}
       labels:
         {{- include "cortex-tenant.selectorLabels" . | nindent 8 }}
+    spec:
       {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
       {{- range .Values.image.pullSecrets }}
         - name: {{ . }}
       {{- end }}
       {{- end }}
-    spec:
       containers:
         - image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
