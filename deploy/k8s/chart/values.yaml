@@ -87,6 +87,11 @@ config:
   # Use 0 to keep them indefinitely
   # (env: `CT_MAX_CONN_DURATION`)
   max_connection_duration: 0s
+  # -- This parameter sets the limit for the count of outgoing concurrent connections to Cortex / Mimir.
+  # By default it's 64 and if all of these connections are busy you will get errors when pushing from Prometheus.
+  # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
+  # (env: `CT_MAX_CONNS_PER_HOST`)
+  max_conns_per_host: 64
 
   # Authentication (optional)
   auth:
