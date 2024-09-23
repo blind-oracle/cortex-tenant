@@ -17,6 +17,7 @@ data:
     metadata: {{ .Values.config.metadata }}
     log_response_errors: {{ .Values.config.log_response_errors }}
     max_connection_duration: {{ .Values.config.max_connection_duration }}
+    max_conns_per_host: {{ .Values.config.max_conns_per_host }}
     {{- if .Values.config.auth.enabled }}
     auth:
       egress:
