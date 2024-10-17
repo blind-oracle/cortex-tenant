@@ -217,6 +217,12 @@
           "description": "Maximum duration to keep outgoing connections alive (to Cortex/Mimir)",
           "format": "duration"
         },
+        "max_conns_per_host": {
+          "type": "integer",
+          "title": "Max Connection per host",
+          "description": "Maximum number of outgoing concurrent connections to Cortex / Mimir",
+          "default": 64
+        },
         "auth": {
           "type": "object",
           "title": "Authentication",
