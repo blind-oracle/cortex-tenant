@@ -95,6 +95,9 @@ spec:
         - configMap:
             name: {{ include "cortex-tenant.fullname" . }}-configmap
           name: config-file
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
