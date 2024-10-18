@@ -198,6 +198,9 @@ podSecurityContext: {}
 # -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context)
 securityContext: {}
 
+# -- [Priority Class](https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass)
+priorityClassName: ""
+
 # -- [Node Selection](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node)
 nodeSelector: {}
 
