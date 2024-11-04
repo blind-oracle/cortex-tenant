@@ -89,12 +89,23 @@ spec:
           volumeMounts:
             - mountPath: /data/
               name: config-file
+            {{- if .Values.customCA }}
+            - mountPath: /etc/ssl/certs/ca-bundle.crt
+              name: ca-bundle
+              subPath: {{ .Values.customCA.subPath | default "ca.crt" }}
+            {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
         - configMap:
             name: {{ include "cortex-tenant.fullname" . }}-configmap
           name: config-file
+        {{- if .Values.customCA }}
+        - name: ca-bundle
+          secret:
+            defaultMode: 420
+            secretName: {{ .Values.customCA.secretName | default "ca-bundle" }}
+        {{- end }}
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
       {{- end }}
