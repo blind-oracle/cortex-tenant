@@ -1,7 +1,7 @@
 apiVersion: v2
 description: A Helm Chart for cortex-tenant
 name: cortex-tenant
-version: 0.7.0 # This is the chart version
+version: 0.8.0 # This is the chart version
 appVersion: 1.13.0 # version number of the application being deployed.
 type: application
 sources:

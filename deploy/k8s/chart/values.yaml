@@ -253,3 +253,9 @@ serviceMonitor:
     additionalLabels: {}
     # namespace:
     rules: []
+
+# -- Optionally specify an custom ca if cortex endpoint is running in a private environment with a self signed ca
+# customCA: {}
+#   secretName: ca-bundle
+#   subPath: ca.crt
+
