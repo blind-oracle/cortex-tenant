@@ -27,6 +27,8 @@ jobs:
     - name: Build
       run: |
         go build ./...
+      env:
+        CGO_ENABLED: 0
 
     - name: Strip
       run: /usr/bin/strip cortex-tenant
