@@ -27,6 +27,8 @@ jobs:
     - name: Build
       run: |
         go build ./...
+      env:
+        CGO_ENABLED: 0
 
     - name: Strip
       run: /usr/bin/strip cortex-tenant
@@ -36,10 +38,13 @@ jobs:
         mkdir -p .debpkg/usr/sbin
         mkdir -p .debpkg/etc/systemd/system
         mkdir -p .debpkg/etc/default
+        mkdir -p .debpkg/DEBIAN
 
         cp cortex-tenant .debpkg/usr/sbin
-        cp deploy/cortex-tenant.deb.service .debpkg/etc/systemd/system
+        cp deploy/cortex-tenant.deb.service .debpkg/etc/systemd/system/cortex-tenant.service
         cp deploy/cortex-tenant.env .debpkg/etc/default/cortex-tenant
+        cp deploy/after-install.sh .debpkg/DEBIAN/postinst
+        chmod +x .debpkg/DEBIAN/postinst
 
     - name: Create RPM package root
       run: |
@@ -48,7 +53,7 @@ jobs:
         mkdir -p .rpmpkg/etc/sysconfig
 
         cp cortex-tenant .rpmpkg/usr/sbin
-        cp deploy/cortex-tenant.rpm.service .rpmpkg/etc/systemd/system
+        cp deploy/cortex-tenant.rpm.service .rpmpkg/etc/systemd/system/cortex-tenant.service
         cp deploy/cortex-tenant.env .rpmpkg/etc/sysconfig/cortex-tenant
 
     - uses: jiro4989/build-deb-action@v3

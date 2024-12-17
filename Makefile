@@ -16,6 +16,7 @@ build:
 	go test ./... && \
 	GOARCH=amd64 \
 	GOOS=linux \
+	CGO_ENABLED=0 \
 	$(GO) build -ldflags "-s -w -extldflags \"-static\" -X main.version=$(VERSION)"
 
 prepare:
