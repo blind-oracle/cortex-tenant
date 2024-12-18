@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	version = "0.0.0"
+	Version string
 )
 
 func main() {
@@ -59,7 +59,7 @@ func main() {
 	}
 
 	log.Warnf("Listening on %s, sending to %s", cfg.Listen, cfg.Target)
-	log.Warnf("Started v%s", version)
+	log.Warnf("Started v%s", Version)
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, os.Interrupt)
