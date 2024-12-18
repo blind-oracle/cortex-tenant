@@ -40,7 +40,7 @@ type config struct {
 		Label              string   `env:"CT_TENANT_LABEL"`
 		LabelList          []string `yaml:"label_list" env:"CT_TENANT_LABEL_LIST" envSeparator:","`
 		Prefix             string   `yaml:"prefix" env:"CT_TENANT_PREFIX"`
-		PrefixPreferSource bool     `yaml:"prefix_prefer_source" env:"CT_TENANT_PREFIX_PREFER_SOURCE`
+		PrefixPreferSource bool     `yaml:"prefix_prefer_source" env:"CT_TENANT_PREFIX_PREFER_SOURCE"`
 		LabelRemove        bool     `yaml:"label_remove" env:"CT_TENANT_LABEL_REMOVE"`
 		Header             string   `env:"CT_TENANT_HEADER"`
 		Default            string   `env:"CT_TENANT_DEFAULT"`

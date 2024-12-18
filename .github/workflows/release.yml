@@ -74,7 +74,6 @@ jobs:
         version: ${{ github.ref }}
         arch: 'x86_64'
         summary: "Cortex-Tenant Service"
-        homepage: "https://github.com/blind-oracle/cortex-tenant"
 
     - uses: ncipollo/release-action@v1
       with:

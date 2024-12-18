@@ -4,7 +4,7 @@ DESCRIPTION := Cortex tenant proxy
 URL := https://github.com/blind-oracle/cortex-tenant
 LICENSE := MPL
 
-VERSION := $(shell cat VERSION)
+VERSION := $(shell git describe --exact-match --tags)
 RELEASE := 1
 
 GO ?= go
@@ -17,7 +17,7 @@ build:
 	GOARCH=amd64 \
 	GOOS=linux \
 	CGO_ENABLED=0 \
-	$(GO) build -ldflags "-s -w -extldflags \"-static\" -X main.version=$(VERSION)"
+	$(GO) build -ldflags "-s -w -extldflags \"-static\" -X main.Version=$(VERSION)"
 
 prepare:
 	cd deploy && \
