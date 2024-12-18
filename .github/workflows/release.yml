@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
 
@@ -43,7 +43,7 @@ jobs:
         cp cortex-tenant .debpkg/usr/sbin
         cp deploy/cortex-tenant.deb.service .debpkg/etc/systemd/system/cortex-tenant.service
         cp deploy/cortex-tenant.env .debpkg/etc/default/cortex-tenant
-        cp deploy/after-install.sh .debpkg/DEBIAN/postinst
+        cp deploy/after_install.sh .debpkg/DEBIAN/postinst
         chmod +x .debpkg/DEBIAN/postinst
 
     - name: Create RPM package root
