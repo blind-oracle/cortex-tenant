@@ -6,6 +6,10 @@
 
 Prometheus remote write proxy which marks timeseries with a Cortex/Mimir tenant ID based on labels.
 
+## Status
+
+The project is stable and (hopefully) almost bug-free. I will accept PRs, but probably will not do any active work on it for now since I don't work with Cortex/Mimir currently.
+
 ## Architecture
 
 ![Architecture](architecture.svg)
