@@ -78,5 +78,5 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         makeLatest: true
+        generateReleaseNotes: true
         artifacts: "cortex-tenant,*.deb,*.rpm"
-        body: "Cortex-Tenant release"
