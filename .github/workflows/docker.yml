@@ -1,23 +1,22 @@
----
-name: docker
+name: Build and publish a Docker image to ghcr.io
 
 on:
   release:
-    types:
-      - published
+    types: [ published ]
 
   push:
     branches:
       - master
 
-  workflow_dispatch:
-  
 jobs:
-  publish:
-    runs-on: ubuntu-latest
+  docker_publish:
+    runs-on: "ubuntu-24.04"
+
     steps:
       - uses: actions/checkout@v4
-      - uses: macbre/push-to-ghcr@master
+
+      - name: Build and publish a Docker image for ${{ github.repository }}
+        uses: macbre/push-to-ghcr@master
         with:
           image_name: ${{ github.repository }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
