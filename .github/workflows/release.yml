@@ -75,8 +75,25 @@ jobs:
         arch: 'x86_64'
         summary: "Cortex-Tenant Service"
 
-    - uses: ncipollo/release-action@v1
+    - name: Build and publish a Docker image for ${{ github.repository }}
+      uses: macbre/push-to-ghcr@master
+      with:
+        image_name: ${{ github.repository }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set env
+      id: env
+      run: |
+        echo ::set-output name=PROJECT_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=PROJECT_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=PROJECT_TAG::${GITHUB_REF#refs/tags/}
+
+    - name: Create release
+      uses: ncipollo/release-action@v1
       with:
         makeLatest: true
         generateReleaseNotes: true
         artifacts: "cortex-tenant,*.deb,*.rpm"
+        body: |
+          Pull image:
+          * `docker pull ghcr.io/blind-oracle/cortex-tenant:${{ steps.env.outputs.PROJECT_TAG }}`
