@@ -1,0 +1,21 @@
+apiVersion: v2
+name: cortex-tenant
+description: Capsule Cortex Tenant
+type: application
+# Note: The version is overwritten by the release workflow.
+version: 0.0.0
+# Note: The version is overwritten by the release workflow.
+appVersion: 0.0.0
+home: https://github.com/projectcapsule/cortex-tenant
+icon: https://github.com/projectcapsule/capsule/raw/main/assets/logo/capsule_small.png
+keywords:
+- kubernetes
+- operator
+- multi-tenancy
+- multi-tenant
+- multitenancy
+- multitenant
+- cortex
+- prometheus
+sources:
+  - https://github.com/projectcapsule/cortex-tenant

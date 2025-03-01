@@ -1,0 +1,260 @@
+# Default values for helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+rbac:
+  # -- Enable bootstraping of RBAC resources
+  enabled: true
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Plugin Configuration
+config:
+  # -- Whether to enable querying for IPv6 records
+  ipv6: false
+  # -- HTTP request timeout
+  timeout: 10s
+  # -- Timeout to wait on shutdown to allow load balancers detect that we're going away.
+  # During this period after the shutdown command the /alive endpoint will reply with HTTP 503.
+  # Set to 0s to disable.
+  timeoutShutdown: 10s
+  # -- Max number of parallel incoming HTTP requests to handle
+  concurrency: 1000
+  # -- Whether to forward metrics metadata from Prometheus to Cortex
+  # Since metadata requests have no timeseries in them - we cannot divide them into tenants
+  # So the metadata requests will be sent to the default tenant only, if one is not defined - they will be dropped
+  metadata: false
+  # -- Maximum duration to keep outgoing connections alive (to Cortex/Mimir)
+  # Useful for resetting L4 load-balancer state
+  # Use 0 to keep them indefinitely
+  maxConnectionDuration: 0s
+  # -- This parameter sets the limit for the count of outgoing concurrent connections to Cortex / Mimir.
+  # By default it's 64 and if all of these connections are busy you will get errors when pushing from Prometheus.
+  # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
+  maxConnectionsPerHost: 64
+
+  backend:
+    # -- Where to send the modified requests (Cortex)
+    url: http://cortex-distributor.cortex.svc:8080/api/v1/push
+    # Authentication (optional)
+    auth:
+      # -- Username
+      username: ""
+      # -- Password
+      password: ""
+
+  tenant:
+    # -- List of labels examined for tenant information. If set takes precedent over `label`
+    labels: []
+    # -- Optional hard-coded prefix with delimeter for all tenant values.
+    # Delimeters allowed for use:
+    # https://grafana.com/docs/mimir/latest/configure/about-tenant-ids/
+    prefix: ""
+    # -- If true will use the tenant ID of the inbound request as the prefix of the new tenant id.
+    # Will be automatically suffixed with a `-` character.
+    # Example:
+    #   Prometheus forwards metrics with `X-Scope-OrgID: Prom-A` set in the inbound request.
+    #   This would result in the tenant prefix being set to `Prom-A-`.
+    prefixPreferSource: false
+    # -- Whether to remove the tenant label from the request
+    labelRemove: false
+    # -- To which header to add the tenant ID
+    header: X-Scope-OrgID
+    # -- Which tenant ID to use if the label is missing in any of the timeseries
+    # If this is not set or empty then the write request with missing tenant label
+    # will be rejected with HTTP code 400
+    default: cortex-tenant-default
+    # -- Enable if you want all metrics from Prometheus to be accepted with a 204 HTTP code
+    # regardless of the response from Cortex. This can lose metrics if Cortex is
+    # throwing rejections.
+    acceptAll: false
+
+# Arguments for the controller
+args:
+  # -- Enable Profiling
+  pprof: false
+  # -- Log Level
+  logLevel: 4
+  # -- A list of extra arguments to add to the capsule-argo-addon
+  extraArgs: []
+
+# -- Amount of replicas
+replicaCount: 1
+image:
+  # -- Set the image registry
+  registry: ghcr.io
+  # -- Set the image repository
+  repository: projectcapsule/cortex-tenant
+  # -- Set the image pull policy.
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# -- Configuration for `imagePullSecrets` so that you can use a private images registry.
+imagePullSecrets: []
+
+serviceAccount:
+  # -- Specifies whether a service account should be created.
+  create: true
+  # -- Annotations to add to the service account.
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+   # -- The name of the service account to use.
+  name: ""
+
+# -- Annotations to add
+podAnnotations: {}
+
+# -- Set the securityContext
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Set the securityContext for the container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# -- Configure the liveness probe using Deployment probe spec
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 10080
+
+# -- Configure the readiness probe using Deployment probe spec
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 10080
+
+# -- Set the resource requests/limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# -- Set the priority class name of the Capsule pod
+priorityClassName: '' # system-cluster-critical
+
+# -- Set the node selector
+nodeSelector: {}
+
+# -- Set list of tolerations
+tolerations: []
+
+# -- Set affinity rules
+affinity: {}
+
+# -- Set topology spread constraints
+topologySpreadConstraints: []
+
+# Pod Disruption Budget
+pdb:
+  # -- Specifies whether an hpa should be created.
+  enabled: false
+  # -- The number of pods from that set that must still be available after the eviction
+  minAvailable: 1
+
+# HorizontalPodAutoscaler
+autoscaling:
+  # -- Specifies whether an hpa should be created.
+  enabled: false
+  # -- Labels to add to the hpa.
+  labels: {}
+  # -- Annotations to add to the hpa.
+  annotations: {}
+  # -- Set the minReplicas for hpa.
+  minReplicas: 1
+  # -- Set the maxReplicas for hpa.
+  maxReplicas: 3
+  # -- Set the targetCPUUtilizationPercentage for hpa.
+  targetCPUUtilizationPercentage: 0
+  # -- Set the targetMemoryUtilizationPercentage for hpa.
+  targetMemoryUtilizationPercentage: 0
+  # -- Custom [metrics-objects](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#autoscaling-on-multiple-metrics-and-custom-metrics) for capsule-proxy hpa
+  metrics: []
+  # - type: Pods
+  #   pods:
+  #     metric:
+  #       name: packets-per-second
+  #     target:
+  #       type: AverageValue
+  #       averageValue: 1k
+  # -- HPA [behavior](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+  behavior: {}
+  # scaleDown:
+  #   policies:
+  #   - type: Pods
+  #     value: 4
+  #     periodSeconds: 60
+  #   - type: Percent
+  #     value: 10
+  #     periodSeconds: 60
+
+
+# Monitoring Values
+monitoring:
+  # -- Enable Monitoring of the Operator
+  enabled: false
+  # PrometheusRules
+  rules:
+    # -- Enable deployment of PrometheusRules
+    enabled: true
+    # -- Install the rules into a different Namespace, as the monitoring stack one (default: the release one)
+    namespace: ''
+    # -- Assign additional labels
+    labels: {}
+    # -- Assign additional Annotations
+    annotations: {}
+    # -- Prometheus Groups for the rule
+    groups:
+    - name: TranslatorAlerts
+      rules:
+        - alert: TranslatorNotReady
+          expr: cca_translator_condition{status="NotReady"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Translator {{ $labels.name }} is not ready"
+            description: "The Translator {{ $labels.name }} has been in a NotReady state for over 5 minutes."
+
+  # ServiceMonitor
+  serviceMonitor:
+    # -- Enable ServiceMonitor
+    enabled: true
+    # -- Install the ServiceMonitor into a different Namespace, as the monitoring stack one (default: the release one)
+    namespace: ''
+    # -- Assign additional labels according to Prometheus' serviceMonitorSelector matching labels
+    labels: {}
+    # -- Assign additional Annotations
+    annotations: {}
+    # -- Change matching labels
+    matchLabels: {}
+    # -- Prometheus Joblabel
+    jobLabel: app.kubernetes.io/name
+    # -- Set targetLabels for the serviceMonitor
+    targetLabels: []
+    serviceAccount:
+      # @default -- `capsule-proxy`
+      name: ""
+      # @default -- `.Release.Namespace`
+      namespace: ""
+    endpoint:
+      # -- Set the scrape interval for the endpoint of the serviceMonitor
+      interval: "15s"
+      # -- Set the scrape timeout for the endpoint of the serviceMonitor
+      scrapeTimeout: ""
+      # -- Set metricRelabelings for the endpoint of the serviceMonitor
+      metricRelabelings: []
+      # -- Set relabelings for the endpoint of the serviceMonitor
+      relabelings: []

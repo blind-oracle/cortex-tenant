@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "baseBranches": ["main"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "branchConcurrentLimit": 0,
+  "mode": "full",
+  "commitMessageLowerCase": "auto",
+  "semanticCommits": "enabled",
+  "flux": {
+    "fileMatch": ["^.*flux\\.yaml$"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions", "flux"],
+      "groupName": "all-ci-dependencies",
+      "updateTypes": ["major", "minor", "patch"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "(?<depName>[A-Z0-9_]+)_VERSION\\s*[:=?]+\\s*\"?(?<currentValue>[^\"\\r\\n]+)\"?[\\s\\S]*?(?<depName2>[A-Z0-9_]+)_LOOKUP\\s*[:=?]+\\s*\"?(?<lookupValue>[^\"\\r\\n]+)\"?(?:[\\s\\S]*?(?<depName3>[A-Z0-9_]+)_SOURCE\\s*[:=?]+\\s*\"?(?<sourceValue>[^\"\\r\\n]+)\"?)?"
+      ],
+      "depNameTemplate": "{{lookupValue}}",
+      "datasourceTemplate": "{{#sourceValue}}{{sourceValue}}{{/sourceValue}}{{^sourceValue}}github-tags{{/sourceValue}}",
+      "lookupNameTemplate": "{{lookupValue}}",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [".*\\.pre-commit-config\\.ya?ml$"],
+      "matchStrings": [
+         "repo:\\s*https://github\\.com/(?<lookupValue>[^/]+/[^\\s]+)[\\s\\S]*?rev:\\s*(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "{{lookupValue}}",
+      "datasourceTemplate": "github-tags",
+      "lookupNameTemplate": "{{lookupValue}}",
+      "versioningTemplate": "semver"
+    }
+  ]
+}

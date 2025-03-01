@@ -1,0 +1,46 @@
+{{- if and $.Values.monitoring.enabled $.Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.fullname" . }}-monitor
+  namespace: {{ .Values.monitoring.serviceMonitor.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.monitoring.serviceMonitor.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  endpoints:
+  {{- with .Values.monitoring.serviceMonitor.endpoint }}
+  - interval: {{ .interval }}
+    port: metrics
+    path: /metrics
+    {{- with .scrapeTimeout }}
+    scrapeTimeout: {{ . }}
+    {{- end }}
+    {{- with .metricRelabelings }}
+    metricRelabelings: {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .relabelings }}
+    relabelings: {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  jobLabel: {{ .Values.monitoring.serviceMonitor.jobLabel }}
+  {{- with .Values.monitoring.serviceMonitor.targetLabels }}
+  targetLabels: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+    {{- if .Values.monitoring.serviceMonitor.matchLabels }}
+      {{- toYaml .Values.monitoring.serviceMonitor.matchLabels | nindent 6 }}
+    {{- else }}
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+    {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}

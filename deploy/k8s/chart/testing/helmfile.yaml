@@ -1,7 +1,0 @@
-helmDefaults:
-  cleanupOnFail: true
-
-releases:
-  - name: cortex-tenant
-    namespace: test
-    chart: ../

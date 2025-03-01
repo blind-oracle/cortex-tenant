@@ -1,18 +1,15 @@
 listen: 0.0.0.0:8080
-listen_pprof: 0.0.0.0:7008
-listen_metrics_address: 0.0.0.0:9090
-metrics_include_tenant: true
 
-target: http://127.0.0.1:9091/receive
+backend:
+  url: http://127.0.0.1:9091/receive
+  auth:
+    egress:
+      username: foo
+      password: bar
+
 enable_ipv6: false
 max_conns_per_host: 64
 
-auth:
-  egress:
-    username: foo
-    password: bar
-
-log_level: debug
 timeout: 10s
 timeout_shutdown: 0s
 concurrency: 10
@@ -20,8 +17,7 @@ metadata: false
 log_response_errors: true
 
 tenant:
-  label: tenant
-  label_list:
+  labels:
     - tenant
     - other_tenant
   prefix: ""

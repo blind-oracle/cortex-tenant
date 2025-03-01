@@ -1,0 +1,50 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: projectcapsule
+spec:
+  interval: 30s
+  url: https://projectcapsule.github.io/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: capsule
+spec:
+  serviceAccountName: kustomize-controller
+  interval: 30s
+  targetNamespace: capsule-system
+  releaseName: "capsule"
+  chart:
+    spec:
+      chart: capsule
+      version: "0.7.4"
+      sourceRef:
+        kind: HelmRepository
+        name: projectcapsule
+      interval: 24h
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+  driftDetection:
+    mode: enabled
+  values:
+    crds:
+      install: true
+    tls:
+      # -- Start the true controller that injects the CA into mutating and validating webhooks, and CRD as well.
+      enableController: false
+      # -- When cert-manager is disabled, Capsule will generate the TLS certificate for webhook and CRDs conversion.
+      create: false
+    certManager:
+      generateCertificates: true
+    manager:
+      options:
+        capsuleUserGroups:
+        - "projectcapsule.dev"
+        forceTenantPrefix: false

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" . }}-metrics
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  type: "ClusterIP"
+  ports:
+    - port: 8080
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}

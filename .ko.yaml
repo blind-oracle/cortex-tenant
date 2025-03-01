@@ -1,0 +1,6 @@
+defaultPlatforms:
+- linux/amd64
+- linux/arm64
+builds:
+- id: cortex-tenant
+  main: ./cmd/

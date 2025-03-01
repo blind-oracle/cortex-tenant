@@ -1,0 +1,77 @@
+# Capsule ❤️ Cortex
+
+![Logo](https://github.com/projectcapsule/cortex-tenant/blob/main/docs/images/logo.png)
+
+## Installation
+
+1. Install Helm Chart:
+
+        $ helm install cortex-tenant oci://ghcr.io/projectcapsule/charts/cortex-tenant  -n monitioring-system
+
+3. Show the status:
+
+        $ helm status cortex-tenant -n monitioring-system
+
+4. Upgrade the Chart
+
+        $ helm upgrade cortex-tenant oci://ghcr.io/projectcapsule/charts/cortex-tenant --version 0.4.7
+
+5. Uninstall the Chart
+
+        $ helm uninstall cortex-tenant -n monitioring-system
+
+## Values
+
+The following Values are available for this chart.
+
+### Global Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if (hasPrefix "global" .Key)  }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+### General Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if not (or (hasPrefix "config" .Key) (hasPrefix "monitoring" .Key) (hasPrefix "autoscaling" .Key) (hasPrefix "global" .Key) (hasPrefix "crds" .Key) (hasPrefix "serviceMonitor" .Key))  }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+
+### Config Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if hasPrefix "config" .Key }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+
+### Autoscaling Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if hasPrefix "autoscaling" .Key }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+### Monitoring Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if hasPrefix "monitoring" .Key }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
