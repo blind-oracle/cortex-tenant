@@ -64,6 +64,12 @@
             "LoadBalancer"
           ]
         },
+
+        "annotations": {
+        "type": "object",
+        "title": "Annotations",
+        "description": "Annotations for the service"
+        },
         "port": {
           "type": "integer",
           "title": "Port",
