@@ -17,6 +17,7 @@ image:
   #   - myRegistryKeySecretName
 
 service:
+  annotations: {}
   # -- The type of service
   type: ClusterIP
   # -- The port on which the service listens for traffic
