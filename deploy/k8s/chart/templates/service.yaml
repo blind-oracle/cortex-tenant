@@ -4,6 +4,8 @@ metadata:
   labels:
     {{- include "cortex-tenant.labels" . | nindent 4 }}
   name: {{ include "cortex-tenant.fullname" . }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
