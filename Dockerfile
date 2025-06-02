@@ -1,6 +1,11 @@
 FROM golang:latest AS builder
 
+ARG TARGETOS
+ARG TARGETARCH
+
 ENV GO111MODULE=on \
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH} \
     CGO_ENABLED=0
 
 WORKDIR /build
@@ -11,16 +16,11 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN make build
+RUN OS=${TARGETOS} ARCH=${TARGETARCH} make build
 
 WORKDIR /dist
 
 RUN cp /build/cortex-tenant ./cortex-tenant
-
-RUN ldd cortex-tenant | tr -s '[:blank:]' '\n' | grep '^/' | \
-    xargs -I % sh -c 'mkdir -p $(dirname ./%); cp % ./%;'
-RUN mkdir -p lib64 && cp /lib64/ld-linux-x86-64.so.2 lib64/
-
 RUN mkdir /data && cp /build/deploy/cortex-tenant.yml /data/cortex-tenant.yml
 
 FROM scratch

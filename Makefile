@@ -10,13 +10,16 @@ RELEASE := 1
 GO ?= go
 OUT := .out
 
+OS ?= linux
+ARCH ?= amd64
+
 all: rpm deb
 
 build:
-	go test ./... && \
-	GOARCH=amd64 \
-	GOOS=linux \
-	CGO_ENABLED=0 \
+	export GOARCH=$(ARCH)
+	export GOOS=$(OS)
+	export CGO_ENABLED=0
+	go test ./...
 	$(GO) build -ldflags "-s -w -extldflags \"-static\" -X main.Version=$(VERSION)"
 
 prepare:
@@ -47,12 +50,12 @@ build-rpm:
 		--iteration $(RELEASE) \
 		--force \
 		--rpm-compression bzip2 \
-		--rpm-os linux \
+		--rpm-os $(OS) \
 		--url $(URL) \
 		--description "$(DESCRIPTION)" \
 		-m "$(MAINTAINER)" \
 		--license "$(LICENSE)" \
-		-a amd64 \
+		-a $(ARCH) \
 		.
 
 build-deb:
@@ -76,5 +79,5 @@ build-deb:
 		--description "$(DESCRIPTION)" \
 		-m "$(MAINTAINER)" \
 		--license "$(LICENSE)" \
-		-a amd64 \
+		-a $(ARCH) \
 		.
