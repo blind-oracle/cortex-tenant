@@ -1,6 +1,8 @@
 # cortex-tenant
 
-![Version: 0.7.0](https://img.shields.io/badge/Version-0.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.13.0](https://img.shields.io/badge/AppVersion-1.13.0-informational?style=flat-square)
+:warning: Migration of chart repo, old release aren't available, please update to the latest version.
+
+![Version: 0.8.1](https://img.shields.io/badge/Version-0.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v2.0.0](https://img.shields.io/badge/AppVersion-1.13.0-informational?style=flat-square)
 
 A Helm Chart for cortex-tenant
 
