@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -11,6 +14,7 @@ import (
 
 	"github.com/blind-oracle/go-common/logger"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	fh "github.com/valyala/fasthttp"
 )
 
@@ -64,6 +68,18 @@ func newProcessor(c config) (*processor, error) {
 		MaxConnsPerHost:    c.MaxConnsPerHost,
 		DialDualStack:      c.EnableIPv6,
 		MaxConnDuration:    c.MaxConnDuration,
+		TLSConfig:          &tls.Config{},
+	}
+
+	if caFile := c.Auth.Egress.TlsConfig.CaBundleFile; caFile != "" {
+		caCert, err := ioutil.ReadFile(caFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to load CA Bundle")
+		}
+
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		p.cli.TLSConfig.RootCAs = caCertPool
 	}
 
 	if c.Auth.Egress.Username != "" {
