@@ -52,7 +52,10 @@ func main() {
 	cfgJSON, _ := json.Marshal(cfg)
 	log.Warnf("Effective config: %+v", string(cfgJSON))
 
-	proc := newProcessor(*cfg)
+	proc, err := newProcessor(*cfg)
+	if err != nil {
+		log.Fatalf("Unable to create processor: %s", err)
+	}
 
 	if err = proc.run(); err != nil {
 		log.Fatalf("Unable to start: %s", err)

@@ -37,7 +37,7 @@ type processor struct {
 	}
 }
 
-func newProcessor(c config) *processor {
+func newProcessor(c config) (*processor, error) {
 	p := &processor{
 		cfg:    c,
 		Logger: logger.NewSimpleLogger("proc"),
@@ -78,7 +78,7 @@ func newProcessor(c config) *processor {
 		}
 	}
 
-	return p
+	return p, nil
 }
 
 func (p *processor) run() (err error) {

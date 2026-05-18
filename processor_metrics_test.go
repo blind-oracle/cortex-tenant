@@ -169,7 +169,7 @@ func createProcessor() (*processor, error) {
 		return nil, err
 	}
 
-	return newProcessor(*cfg), nil
+	return newProcessor(*cfg)
 }
 
 func sinkHandlerError(ctx *fh.RequestCtx) {
@@ -223,7 +223,7 @@ func Test_request_headers(t *testing.T) {
 	cfg, err := getConfig(testConfig)
 	assert.Nil(t, err)
 
-	p := newProcessor(*cfg)
+	p, _ := newProcessor(*cfg)
 
 	req := fh.AcquireRequest()
 	clientIP, _ := net.ResolveIPAddr("ip", "1.1.1.1")
@@ -242,7 +242,7 @@ func Test_handle(t *testing.T) {
 	cfg.pipeOut = fhu.NewInmemoryListener()
 	cfg.Tenant.LabelRemove = true
 
-	p := newProcessor(*cfg)
+	p, _ := newProcessor(*cfg)
 	err = p.run()
 	assert.Nil(t, err)
 
@@ -384,7 +384,7 @@ func Test_processTimeseries(t *testing.T) {
 	assert.Nil(t, err)
 	cfg.Tenant.LabelRemove = true
 
-	p := newProcessor(*cfg)
+	p, _ := newProcessor(*cfg)
 	assert.Nil(t, err)
 
 	ten, err := p.processTimeseries(&testTS4)
@@ -396,7 +396,7 @@ func Test_processTimeseries(t *testing.T) {
 	assert.Equal(t, "default", ten)
 
 	cfg.Tenant.Default = ""
-	p = newProcessor(*cfg)
+	p, _ = newProcessor(*cfg)
 	assert.Nil(t, err)
 
 	_, err = p.processTimeseries(&testTS3)
