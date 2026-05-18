@@ -19,6 +19,7 @@ A Helm Chart for cortex-tenant
 | autoscaling.minReplica | int | `1` | Min number of pod replica autoscaled |
 | autoscaling.targetCPUUtilizationPercentage | int | `60` | Target CPU utilization percentage for autoscaling |
 | autoscaling.targetMemoryUtilizationPercentage | int | `60` | Target memory utilization percentage for autoscaling |
+| config.ca_bundle_file | string | `null` | If set, this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server |
 | config.auth.enabled | bool | `false` | Egress HTTP basic auth -> add `Authentication` header to outgoing requests |
 | config.auth.existingSecret | string | `nil` | Secret should pass the `CT_AUTH_EGRESS_USERNAME` and `CT_AUTH_EGRESS_PASSWORD` env variables |
 | config.auth.password | string | `nil` | Password (env: `CT_AUTH_EGRESS_PASSWORD`) |

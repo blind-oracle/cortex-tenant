@@ -96,6 +96,9 @@ config:
   # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
   # (env: `CT_MAX_CONNS_PER_HOST`)
   max_conns_per_host: 64
+  # -- If set this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server.
+  # (env: `CT_CA_BUNDLE_FILE`)
+  ca_bundle_file:
 
   # Authentication (optional)
   auth:

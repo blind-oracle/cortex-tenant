@@ -235,6 +235,14 @@
           "description": "Maximum number of outgoing concurrent connections to Cortex / Mimir",
           "default": 64
         },
+        "ca_bundle_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "CA Bundle File",
+          "description": "If set, this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server"
+        },
         "auth": {
           "type": "object",
           "title": "Authentication",

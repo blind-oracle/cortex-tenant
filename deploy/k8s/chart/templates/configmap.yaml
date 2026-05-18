@@ -18,12 +18,14 @@ data:
     log_response_errors: {{ .Values.config.log_response_errors }}
     max_connection_duration: {{ .Values.config.max_connection_duration }}
     max_conns_per_host: {{ .Values.config.max_conns_per_host }}
-    {{- if .Values.config.auth.enabled }}
     auth:
       egress:
+        tls_config:
+          ca_bundle_file: {{ .Values.config.ca_bundle_file }}
+        {{- if .Values.config.auth.enabled }}
         username: {{ .Values.config.auth.username }}
         password: {{ .Values.config.auth.password }}
-    {{- end }}
+        {{- end }}
     tenant:
       label: {{ .Values.config.tenant.label }}
       {{- with .Values.config.tenant.label_list }}
