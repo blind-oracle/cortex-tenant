@@ -21,7 +21,11 @@ data:
     auth:
       egress:
         tls_config:
+          {{- if .Values.customCA }}
+          ca_bundle_file: /var/run/secrets/custom-ca/ca.crt
+          {{- else }}
           ca_bundle_file: {{ .Values.config.ca_bundle_file }}
+          {{- end }}
         {{- if .Values.config.auth.enabled }}
         username: {{ .Values.config.auth.username }}
         password: {{ .Values.config.auth.password }}
