@@ -90,7 +90,7 @@ spec:
             - mountPath: /data/
               name: config-file
             {{- if .Values.customCA }}
-            - mountPath: /etc/ssl/certs/ca-bundle.crt
+            - mountPath: /var/run/secrets/custom-ca/ca.crt
               name: ca-bundle
               subPath: {{ .Values.customCA.subPath | default "ca.crt" }}
             {{- end }}

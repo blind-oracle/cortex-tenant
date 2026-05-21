@@ -96,6 +96,10 @@ config:
   # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
   # (env: `CT_MAX_CONNS_PER_HOST`)
   max_conns_per_host: 64
+  # -- If set this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server.
+  # This field is ignored if customCA is set.
+  # (env: `CT_CA_BUNDLE_FILE`)
+  ca_bundle_file:
 
   # Authentication (optional)
   auth:
@@ -259,6 +263,7 @@ serviceMonitor:
     rules: []
 
 # -- Optionally specify an custom ca if cortex endpoint is running in a private environment with a self signed ca
+# If present, config.ca_bundle_file is overriden with the mount path of this secret.
 # customCA: {}
 #   secretName: ca-bundle
 #   subPath: ca.crt
