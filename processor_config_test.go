@@ -148,28 +148,52 @@ func Test_CABundleFileFail(t *testing.T) {
 	require.Error(t, err)
 }
 
+// Signs the given certificate after adding some sensible required
+// values
+func signCert(t *testing.T, cert, parent *x509.Certificate, pubKey, caPriv any) []byte {
+	cert.NotBefore = time.Now().UTC()
+	cert.NotAfter = time.Now().Add(5 * time.Minute).UTC()
+	cert.BasicConstraintsValid = true
+
+	signed, err := x509.CreateCertificate(rand.Reader, cert, parent, pubKey, caPriv)
+	require.NoError(t, err)
+
+	return signed
+}
+
+// Generates a private key pair for testing
+func makePrivateKey(t *testing.T) (any, any) {
+	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	return pubKey, privateKey
+}
+
 // Generates a self signed CA for testing
-//
-// NB: The generated cert does not have the appropraite fields to be useful
-// for anything.
-func generateCA(t *testing.T, w io.Writer, cn string) string {
+func generateCA(t *testing.T, cn string) ([]byte, any) {
 	cert := x509.Certificate{
 		Subject: pkix.Name{
 			CommonName: cn,
 		},
+		IsCA: true,
 	}
-	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	require.NoError(t, err)
+	pubKey, privateKey := makePrivateKey(t)
 
-	signed, err := x509.CreateCertificate(rand.Reader, &cert, &cert, pubKey, privateKey)
-	require.NoError(t, err)
+	return signCert(t, &cert, &cert, pubKey, privateKey), privateKey
+}
+
+// Generates a self signed CA and writes it to the given writer
+//
+// It returns the string representation of the subject
+func generateAndWriteCA(t *testing.T, w io.Writer, cn string) string {
+	signed, _ := generateCA(t, cn)
 
 	require.NoError(t, pem.Encode(w, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: signed,
 	}))
 
-	return cert.Subject.String()
+	return "CN=" + cn
 }
 
 // Tests that when a CA Bundle file is given its certs are loaded into the client
@@ -186,8 +210,8 @@ func Test_CABundleFile(t *testing.T) {
 	require.NoError(t, err)
 
 	generatedSubjects := []string{
-		generateCA(t, f, "Test 1"),
-		generateCA(t, f, "Test 2"),
+		generateAndWriteCA(t, f, "Test 1"),
+		generateAndWriteCA(t, f, "Test 2"),
 	}
 
 	p, err := newProcessor(cfg)
