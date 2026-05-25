@@ -1,8 +1,16 @@
 package main
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/base64"
+	"encoding/pem"
+	"io"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -128,4 +136,92 @@ func Test_AuthHeader(t *testing.T) {
 			assert.Equal(t, password, pass, "Authorization Header Password is not correct")
 		},
 	)
+}
+
+// Tests that if you set a CA Bundle File which doesn't exist, newProcessor appropriately
+// fails with an error
+func Test_CABundleFileFail(t *testing.T) {
+	cfg := config{}
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = "file_does_not_exist.crt"
+
+	_, err := newProcessor(cfg)
+	require.Error(t, err)
+}
+
+// Generates a self signed CA for testing
+//
+// NB: The generated cert does not have the appropraite fields to be useful
+// for anything.
+func generateCA(t *testing.T, w io.Writer, cn string) string {
+	cert := x509.Certificate{
+		Subject: pkix.Name{
+			CommonName: cn,
+		},
+	}
+	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	signed, err := x509.CreateCertificate(rand.Reader, &cert, &cert, pubKey, privateKey)
+	require.NoError(t, err)
+
+	require.NoError(t, pem.Encode(w, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: signed,
+	}))
+
+	return cert.Subject.String()
+}
+
+// Tests that when a CA Bundle file is given its certs are loaded into the client
+// used by the processor
+func Test_CABundleFile(t *testing.T) {
+	t.Cleanup(func() {
+		os.Remove("/tmp/test_ca.crt")
+	})
+
+	cfg := config{}
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = "/tmp/test_ca.crt"
+
+	f, err := os.Create("/tmp/test_ca.crt")
+	require.NoError(t, err)
+
+	generatedSubjects := []string{
+		generateCA(t, f, "Test 1"),
+		generateCA(t, f, "Test 2"),
+	}
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	pool := p.cli.TLSConfig.RootCAs
+	require.NotNil(t, pool)
+
+	foundSubjects := pool.Subjects()
+	require.Len(t, foundSubjects, len(generatedSubjects))
+
+	for i, foundSubject := range foundSubjects {
+		// CertPool.Subjects() returns the encoded byte slice subjects.
+		// We need to decode them to meaningfully compare they are correct.
+		rdnSeq := pkix.RDNSequence{}
+		asn1.Unmarshal(foundSubject, &rdnSeq)
+
+		require.Equal(t, generatedSubjects[i], rdnSeq.String())
+	}
+}
+
+// Tests that when no CA Bundle file is given in the config, no attempt to load it
+// is made.
+func Test_NoCABundleFile(t *testing.T) {
+	cfg := config{}
+
+	// Not strictly required as this is the default, but be explict this is what
+	// we are testing
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = ""
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	// Empty RootCAs means the TLSConfig will fall back to using system trust
+	// certs, as desired.
+	require.Nil(t, p.cli.TLSConfig.RootCAs)
 }
