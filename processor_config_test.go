@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -248,4 +249,131 @@ func Test_NoCABundleFile(t *testing.T) {
 	// Empty RootCAs means the TLSConfig will fall back to using system trust
 	// certs, as desired.
 	require.Nil(t, p.cli.TLSConfig.RootCAs)
+}
+
+// Runs the processor, requiring that it succeeds, and registering a cleanup
+// function to shut it down again after the test.
+func runProcessor(t *testing.T, p *processor) {
+	require.NoError(t, p.run())
+	t.Cleanup(func() {
+		p.close()
+	})
+}
+
+// Tests that when no CertFile / KeyFile are specified, the server listens
+// in plain HTTP
+func Test_NoTls(t *testing.T) {
+	cfg := config{}
+	cfg.pipeIn = fhu.NewInmemoryListener()
+
+	cfg.Auth.Ingress.TlsConfig.CertFile = ""
+	cfg.Auth.Ingress.TlsConfig.KeyFile = ""
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	c := &fh.Client{
+		Dial: func(_ string) (net.Conn, error) {
+			return cfg.pipeIn.Dial()
+		},
+	}
+
+	runProcessor(t, p)
+
+	req := fh.AcquireRequest()
+
+	// Expect this to be accessible over HTTP (no TLS)
+	req.SetRequestURI("http://test/alive")
+	require.NoError(t, c.Do(req, nil))
+
+	// Expect this to be inaccessible over HTTPS (no TLS)
+	req.SetRequestURI("https://test/alive")
+	require.Error(t, c.Do(req, nil))
+}
+
+// Makes and write a PEM block to a given file
+func makeAndWrite(t *testing.T, name, pemType string, content []byte) {
+	f, err := os.Create(name)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		os.Remove(name)
+	})
+
+	require.NoError(t, pem.Encode(f, &pem.Block{
+		Type:  pemType,
+		Bytes: content,
+	}))
+	f.Close()
+}
+
+// Creates a cert and key for the "test" service, signed by the given CA
+func makeCertKeyPair(t *testing.T, ca *x509.Certificate, caPriv any) {
+	cert := x509.Certificate{
+		Subject: pkix.Name{
+			CommonName: "test",
+		},
+		DNSNames: []string{"test"},
+	}
+	pubKey, privateKey := makePrivateKey(t)
+
+	makeAndWrite(t,
+		"/tmp/tls.crt",
+		"CERTIFICATE",
+		signCert(t, &cert, ca, pubKey, caPriv),
+	)
+
+	marshalledKey, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	require.NoError(t, err)
+	makeAndWrite(t, "/tmp/tls.key", "PRIVATE KEY", marshalledKey)
+}
+
+// Tests that when CertFile / KeyFile are specified, the server listens
+// using TLS
+func Test_Tls(t *testing.T) {
+	signed, privateKey := generateCA(t, "Test CA")
+
+	ca, err := x509.ParseCertificate(signed)
+	require.NoError(t, err)
+
+	makeCertKeyPair(t, ca, privateKey)
+
+	cfg := config{}
+	cfg.Auth.Ingress.TlsConfig.CertFile = "/tmp/tls.crt"
+	cfg.Auth.Ingress.TlsConfig.KeyFile = "/tmp/tls.key"
+	cfg.pipeIn = fhu.NewInmemoryListener()
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	c := &fh.Client{
+		Dial: func(_ string) (net.Conn, error) {
+			return cfg.pipeIn.Dial()
+		},
+		TLSConfig: &tls.Config{
+			RootCAs: x509.NewCertPool(),
+		},
+	}
+	c.TLSConfig.RootCAs.AddCert(ca)
+
+	runProcessor(t, p)
+
+	req := fh.AcquireRequest()
+
+	// Expect this to be inaccessible over HTTP (because it is TLS)
+	req.SetRequestURI("http://test/alive")
+	require.Error(t, c.Do(req, nil))
+
+	// Expect this to be accessible over HTTPS (because it is TLS)
+	req.SetRequestURI("https://test/alive")
+	require.NoError(t, c.Do(req, nil))
+}
+
+func Test_TlsFail(t *testing.T) {
+	cfg := config{}
+	cfg.Auth.Ingress.TlsConfig.CertFile = "file_does_not_exist.crt"
+	cfg.Auth.Ingress.TlsConfig.KeyFile = "file_does_not_exist.key"
+
+	_, err := newProcessor(cfg)
+	require.Error(t, err)
 }

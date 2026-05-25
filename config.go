@@ -40,6 +40,12 @@ type config struct {
 				CaBundleFile string `yaml:"ca_bundle_file" env:"CT_CA_BUNDLE_FILE"`
 			} `yaml:"tls_config"`
 		}
+		Ingress struct {
+			TlsConfig struct {
+				CertFile string `yaml:"cert_file" env:"CT_TLS_CERT_FILE"`
+				KeyFile  string `yaml:"key_file" env:"CT_TLS_KEY_FILE"`
+			} `yaml:"tls_config"`
+		}
 	}
 
 	Tenant struct {

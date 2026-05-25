@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/blind-oracle/go-common/logger"
+	"github.com/dyson/certman"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	fh "github.com/valyala/fasthttp"
@@ -58,6 +59,8 @@ func newProcessor(c config) (*processor, error) {
 		IdleTimeout:  c.IdleTimeout,
 
 		Concurrency: c.Concurrency,
+
+		TLSConfig: &tls.Config{},
 	}
 
 	p.cli = &fh.Client{
@@ -87,6 +90,22 @@ func newProcessor(c config) (*processor, error) {
 		p.auth.egressHeader = []byte("Basic " + base64.StdEncoding.EncodeToString(authString))
 	}
 
+	if c.Auth.Ingress.TlsConfig.CertFile != "" && c.Auth.Ingress.TlsConfig.KeyFile != "" {
+		cm, err := certman.New(
+			c.Auth.Ingress.TlsConfig.CertFile,
+			c.Auth.Ingress.TlsConfig.KeyFile,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to configure server TLS")
+		}
+		err = cm.Watch()
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to configure server TLS")
+		}
+
+		p.srv.TLSConfig.GetCertificate = cm.GetCertificate
+	}
+
 	// For testing
 	if c.pipeOut != nil {
 		p.cli.Dial = func(a string) (net.Conn, error) {
@@ -109,7 +128,13 @@ func (p *processor) run() (err error) {
 		l = p.cfg.pipeIn
 	}
 
-	go p.srv.Serve(l)
+	if p.srv.TLSConfig.GetCertificate == nil {
+		go p.srv.Serve(l)
+	} else {
+		// Just pass empty certFile and keyFile to serveTLS because we have
+		// overriden the static behaviour with CertMan in the processor setup.
+		go p.srv.ServeTLS(l, "", "")
+	}
 	return
 }
 
