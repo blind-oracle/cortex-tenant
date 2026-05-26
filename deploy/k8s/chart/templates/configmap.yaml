@@ -30,6 +30,14 @@ data:
         username: {{ .Values.config.auth.username }}
         password: {{ .Values.config.auth.password }}
         {{- end }}
+      {{- with .Values.config.tls }}
+      {{- if .enabled }}
+      ingress:
+        tls_config:
+          cert_file: {{ .cert_file }}
+          key_file: {{ .key_file }}
+      {{- end }}
+      {{- end }}
     tenant:
       label: {{ .Values.config.tenant.label }}
       {{- with .Values.config.tenant.label_list }}

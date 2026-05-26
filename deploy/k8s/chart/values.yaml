@@ -101,6 +101,22 @@ config:
   # (env: `CT_CA_BUNDLE_FILE`)
   ca_bundle_file:
 
+  tls:
+    # -- Ingress TLS
+    # If set the service will accept TLS traffic. Otherwise plain HTTP.
+    enabled: false
+
+    # -- TLS Certificate Path
+    # (env: `CT_TLS_CERT_FILE`)
+    cert_file: /var/run/pki/tls.crt
+
+    # -- TLS Key Path
+    # (env: `CT_TLS_KEY_FILE`)
+    key_file: /var/run/pki/tls.key
+
+    # -- Secret should be of type kubernetes.io/tls with tls.key and tls.crt entries.
+    existingSecret:
+
   # Authentication (optional)
   auth:
     # -- Egress HTTP basic auth -> add `Authentication` header to outgoing requests
