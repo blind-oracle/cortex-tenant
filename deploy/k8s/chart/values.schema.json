@@ -243,6 +243,35 @@
           "title": "CA Bundle File",
           "description": "If set, this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server"
         },
+        "tls": {
+          "type": "object",
+          "title": "TLS Configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled",
+              "description": "If true the service will accept TLS traffic. Otherwise plain HTTP."
+            },
+            "cert_file": {
+              "type": "string",
+              "title": "TLS Certificate Path",
+              "description": "The path to the certificate file within the container"
+            },
+            "key_file": {
+              "type": "string",
+              "title": "TLS Key Path",
+              "description": "The path to the private key file within the container"
+            },
+            "existingSecret": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Existing Secret",
+              "description": "Secret should be of type kubernetes.io/tls with tls.key and tls.crt entries"
+            }
+          }
+        },
         "auth": {
           "type": "object",
           "title": "Authentication",

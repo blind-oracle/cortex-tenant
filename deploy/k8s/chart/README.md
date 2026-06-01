@@ -20,6 +20,10 @@ A Helm Chart for cortex-tenant
 | autoscaling.targetCPUUtilizationPercentage | int | `60` | Target CPU utilization percentage for autoscaling |
 | autoscaling.targetMemoryUtilizationPercentage | int | `60` | Target memory utilization percentage for autoscaling |
 | config.ca_bundle_file | string | `null` | If set, this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server |
+| config.tls.enabled | bool | `false` | If true the service will accept TLS traffic. Otherwise plain HTTP. |
+| config.tls.cert_file | string | `"/var/run/pki/tls.crt"` | The path to the certificate file within the container |
+| config.tls.key_file | string | `"/var/run/pki/tls.key"` | The path to the private key file within the container |
+| config.tls.existingSecret | string | `null` | Secret should be of type kubernetes.io/tls with tls.key and tls.crt entries |
 | config.auth.enabled | bool | `false` | Egress HTTP basic auth -> add `Authentication` header to outgoing requests |
 | config.auth.existingSecret | string | `nil` | Secret should pass the `CT_AUTH_EGRESS_USERNAME` and `CT_AUTH_EGRESS_PASSWORD` env variables |
 | config.auth.password | string | `nil` | Password (env: `CT_AUTH_EGRESS_PASSWORD`) |
