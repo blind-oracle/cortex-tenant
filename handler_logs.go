@@ -107,7 +107,7 @@ func (p *processor) handleLogs(ctx *fh.RequestCtx) {
 
 	metricTenant := ""
 	var errs *me.Error
-	results := p.dispatch(p.cfg.TargetLoki, clientIP, reqID, tenantPrefix, m)
+	results := p.dispatch(p.cfg.TargetLoki, clientIP, reqID, tenantPrefix, m, contentTypePromRW)
 
 	code, body := 0, []byte("Ok")
 

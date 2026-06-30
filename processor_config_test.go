@@ -80,7 +80,7 @@ func runConfigTest(t *testing.T, cfgSetup func(*config), handler fh.RequestHandl
 
 	go s.Serve(cfg.pipeOut)
 
-	result := p.send("http://test/push", getClientIP(), getUUID(t), "", emptyBodyFunc)
+	result := p.send("http://test/push", getClientIP(), getUUID(t), "", emptyBodyFunc, contentTypePromRW)
 	require.NoError(t, result.err)
 }
 

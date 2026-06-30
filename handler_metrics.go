@@ -78,7 +78,7 @@ func (p *processor) handleMetrics(ctx *fh.RequestCtx) {
 		// If there's metadata - just accept the request and drop it
 		if len(wrReqIn.Metadata) > 0 {
 			if p.cfg.Metadata && p.cfg.Tenant.Default != "" {
-				r := p.send(p.cfg.Target, clientIP, reqID, tenantPrefix+p.cfg.Tenant.Default, wrReqIn.Marshal)
+				r := p.send(p.cfg.Target, clientIP, reqID, tenantPrefix+p.cfg.Tenant.Default, wrReqIn.Marshal, contentTypePromRW)
 				if r.err != nil {
 					ctx.Error(r.err.Error(), fh.StatusInternalServerError)
 					p.Errorf("src=%s req_id=%s: unable to proxy metadata: %s", clientIP, reqID, r.err)
@@ -103,7 +103,7 @@ func (p *processor) handleMetrics(ctx *fh.RequestCtx) {
 
 	metricTenant := ""
 	var errs *me.Error
-	results := p.dispatch(p.cfg.Target, clientIP, reqID, tenantPrefix, m)
+	results := p.dispatch(p.cfg.Target, clientIP, reqID, tenantPrefix, m, contentTypePromRW)
 
 	code, body := 0, []byte("Ok")
 

@@ -22,14 +22,15 @@ Cortex/Mimir/Loki tenants (separate namespaces where metrics are stored to and q
 
 This software solves the problem using the following logic:
 
-- Receive Prometheus remote write or [Loki push](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs)
+- Receive Prometheus remote write, [Loki push](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs) or OTLP/HTTP metrics and traces
 - Search each timeseries/stream for a specific label name and extract a tenant ID from its value.
   For Loki the stream labels are preferred over [structured metadata](https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/) labels.
+  For OTLP metrics and traces the tenant is read from a matching **resource-level attribute** (the whole resource is routed to that tenant).
   If the label wasn't found then it can fall back to a configurable default ID.
   If none is configured then the write/push request will be rejected with HTTP code 400
-- Optionally removes this label from the timeseries/stream
+- Optionally removes this label from the timeseries/stream/resource
 - Groups timeseries/streams by tenant
-- Issues a number of parallel per-tenant HTTP requests to Cortex/Mimir/Loki with the relevant tenant HTTP header (`X-Scope-OrgID` by default)
+- Issues a number of parallel per-tenant HTTP requests to Cortex/Mimir/Loki (and OTLP-capable backends) with the relevant tenant HTTP header (`X-Scope-OrgID` by default)
 
 ## Usage
 
@@ -40,6 +41,8 @@ This software solves the problem using the following logic:
 - GET `/alive` returns 200 by default and 503 if the service is shutting down (if `timeout_shutdown` setting is > 0)
 - POST `/push` receives metrics from Prometheus - configure remote write to send here
 - POST `/loki/push` receives logs from Loki - configure push to send here
+- POST `/v1/metrics` receives OTLP/HTTP metrics - point an OTLP exporter here to forward to an OTLP-capable backend (e.g. Grafana Mimir)
+- POST `/v1/traces` receives OTLP/HTTP traces - point an OTLP exporter here to forward to an OTLP-capable backend (e.g. Grafana Tempo)
 
 ### Configuration
 
@@ -65,6 +68,22 @@ target: http://127.0.0.1:9091/receive
 # env: CT_TARGET_LOKI
 target_loki: http://127.0.0.1:3100/loki/api/v1/push
 
+# Where to send the modified requests (OTLP/HTTP metrics)
+# Point this at an OTLP-capable backend, e.g. Grafana Mimir's native OTLP endpoint.
+# env: CT_TARGET_OTLP
+target_otlp: http://127.0.0.1:9009/otlp/v1/metrics
+
+# Where to send the modified requests (OTLP/HTTP traces)
+# Point this at an OTLP-capable tracing backend, e.g. Grafana Tempo's OTLP/HTTP endpoint.
+# env: CT_TARGET_TRACES
+target_traces: http://127.0.0.1:4318/v1/traces
+
+# Whether to gzip-compress OTLP/HTTP egress (both /v1/metrics and /v1/traces).
+# Trades CPU for bandwidth; useful for large trace batches. Ingress decoding
+# already supports gzip regardless of this setting.
+# env: CT_OTLP_EGRESS_GZIP
+otlp_egress_gzip: false
+
 # Whether to enable querying for IPv6 records
 # env: CT_ENABLE_IPV6
 enable_ipv6: false
@@ -74,6 +93,12 @@ enable_ipv6: false
 # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
 # env: CT_MAX_CONNS_PER_HOST
 max_conns_per_host: 0
+
+# Maximum size in bytes of an incoming request body. Requests larger than this
+# are rejected with HTTP 413. Increase this for large OTLP trace batches.
+# Default is 8388608 (8 MiB).
+# env: CT_MAX_REQUEST_BODY_SIZE
+max_request_body_size: 8388608
 
 # Authentication (optional)
 auth:
