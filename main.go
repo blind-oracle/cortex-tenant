@@ -62,7 +62,7 @@ func main() {
 	}
 
 	log.Warnf("Listening on %s, sending to %s and %s", cfg.Listen, cfg.Target, cfg.TargetLoki)
-	log.Warnf("Started v%s", Version)
+	log.Warnf("Started %s", Version)
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, os.Interrupt)
