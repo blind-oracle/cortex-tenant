@@ -27,6 +27,39 @@ type result struct {
 	err      error
 }
 
+// egressContentType describes the protocol-specific HTTP headers to set on
+// outgoing requests to the upstream backend.
+type egressContentType struct {
+	contentType     string
+	contentEncoding string
+	promRemoteWrite bool
+}
+
+var (
+	// contentTypePromRW is used for Prometheus remote write and Loki push,
+	// both of which send snappy-compressed protobuf.
+	contentTypePromRW = egressContentType{
+		contentType:     "application/x-protobuf",
+		contentEncoding: "snappy",
+		promRemoteWrite: true,
+	}
+
+	// contentTypeOTLP is used for OTLP/HTTP, sending uncompressed protobuf.
+	contentTypeOTLP = egressContentType{
+		contentType:     "application/x-protobuf",
+		contentEncoding: "",
+		promRemoteWrite: false,
+	}
+
+	// contentTypeOTLPGzip is used for OTLP/HTTP when egress gzip compression is
+	// enabled, sending gzip-compressed protobuf.
+	contentTypeOTLPGzip = egressContentType{
+		contentType:     "application/x-protobuf",
+		contentEncoding: "gzip",
+		promRemoteWrite: false,
+	}
+)
+
 type processor struct {
 	cfg config
 
@@ -52,7 +85,7 @@ func newProcessor(c config) (*processor, error) {
 		Name:    "cortex-tenant",
 		Handler: p.handle,
 
-		MaxRequestBodySize: 8 * 1024 * 1024,
+		MaxRequestBodySize: c.MaxRequestBodySize,
 
 		ReadTimeout:  c.Timeout,
 		WriteTimeout: c.Timeout,
@@ -162,10 +195,29 @@ func (p *processor) handle(ctx *fh.RequestCtx) {
 		return
 	}
 
+	if bytes.Equal(ctx.Path(), []byte("/v1/metrics")) {
+		p.handleOTLPMetrics(ctx)
+		return
+	}
+
+	if bytes.Equal(ctx.Path(), []byte("/v1/traces")) {
+		p.handleOTLPTraces(ctx)
+		return
+	}
+
 	ctx.SetStatusCode(fh.StatusNotFound)
 }
 
-func (p *processor) dispatch(target string, clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, m map[string]func() ([]byte, error)) (res []result) {
+// otlpEgressContentType returns the egress content type used for OTLP forwarding,
+// selecting the gzip-compressed variant when OTLPEgressGzip is enabled.
+func (p *processor) otlpEgressContentType() egressContentType {
+	if p.cfg.OTLPEgressGzip {
+		return contentTypeOTLPGzip
+	}
+	return contentTypeOTLP
+}
+
+func (p *processor) dispatch(target string, clientIP net.Addr, reqID uuid.UUID, tenantPrefix string, m map[string]func() ([]byte, error), ct egressContentType) (res []result) {
 	var wg sync.WaitGroup
 	res = make([]result, len(m))
 
@@ -176,7 +228,7 @@ func (p *processor) dispatch(target string, clientIP net.Addr, reqID uuid.UUID, 
 		go func(idx int, tenant string, bodyFunc func() ([]byte, error)) {
 			defer wg.Done()
 
-			r := p.send(target, clientIP, reqID, tenant, bodyFunc)
+			r := p.send(target, clientIP, reqID, tenant, bodyFunc, ct)
 			res[idx] = r
 		}(i, tenantPrefix+tenant, bodyFunc)
 
@@ -187,7 +239,7 @@ func (p *processor) dispatch(target string, clientIP net.Addr, reqID uuid.UUID, 
 	return
 }
 
-func (p *processor) send(target string, clientIP net.Addr, reqID uuid.UUID, tenant string, bodyFunc func() ([]byte, error)) (r result) {
+func (p *processor) send(target string, clientIP net.Addr, reqID uuid.UUID, tenant string, bodyFunc func() ([]byte, error), ct egressContentType) (r result) {
 	start := time.Now()
 	r.tenant = tenant
 
@@ -205,7 +257,14 @@ func (p *processor) send(target string, clientIP net.Addr, reqID uuid.UUID, tena
 		return
 	}
 
-	p.fillRequestHeaders(clientIP, reqID, tenant, req)
+	// Compress the payload if the egress protocol requests gzip. Snappy-encoded
+	// payloads (Prometheus remote write / Loki) are already compressed by their
+	// handlers, so only gzip is applied here.
+	if ct.contentEncoding == "gzip" {
+		buf = fh.AppendGzipBytes(nil, buf)
+	}
+
+	p.fillRequestHeaders(clientIP, reqID, tenant, ct, req)
 
 	if p.auth.egressHeader != nil {
 		req.Header.SetBytesV("Authorization", p.auth.egressHeader)
@@ -229,10 +288,14 @@ func (p *processor) send(target string, clientIP net.Addr, reqID uuid.UUID, tena
 }
 
 func (p *processor) fillRequestHeaders(
-	clientIP net.Addr, reqID uuid.UUID, tenant string, req *fh.Request) {
-	req.Header.Set("Content-Encoding", "snappy")
-	req.Header.Set("Content-Type", "application/x-protobuf")
-	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	clientIP net.Addr, reqID uuid.UUID, tenant string, ct egressContentType, req *fh.Request) {
+	if ct.contentEncoding != "" {
+		req.Header.Set("Content-Encoding", ct.contentEncoding)
+	}
+	req.Header.Set("Content-Type", ct.contentType)
+	if ct.promRemoteWrite {
+		req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	}
 	req.Header.Set("X-Cortex-Tenant-Client", clientIP.String())
 	req.Header.Set("X-Cortex-Tenant-ReqID", reqID.String())
 	req.Header.Set(p.cfg.Tenant.Header, tenant)

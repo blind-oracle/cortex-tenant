@@ -56,6 +56,15 @@ config:
   # -- Where to send the modified requests (Cortex)
   # (env: `CT_TARGET`)
   target: http://cortex-distributor.cortex.svc:8080/api/v1/push
+  # -- Where to send the modified OTLP/HTTP metrics requests
+  # (env: `CT_TARGET_OTLP`)
+  target_otlp: http://cortex-distributor.cortex.svc:8080/otlp/v1/metrics
+  # -- Where to send the modified OTLP/HTTP traces requests
+  # (env: `CT_TARGET_TRACES`)
+  target_traces: http://tempo:4318/v1/traces
+  # -- Whether to gzip-compress OTLP/HTTP egress requests
+  # (env: `CT_OTLP_EGRESS_GZIP`)
+  otlp_egress_gzip: false
   # -- Whether to enable querying for IPv6 records
   # (env: `CT_ENABLE_IPV6`)
   enable_ipv6: false
@@ -96,6 +105,9 @@ config:
   # If your `target` is a DNS name that resolves to several IPs then this will be a per-IP limit.
   # (env: `CT_MAX_CONNS_PER_HOST`)
   max_conns_per_host: 64
+  # -- Maximum size in bytes of an incoming request body
+  # (env: `CT_MAX_REQUEST_BODY_SIZE`)
+  max_request_body_size: 8388608
   # -- If set this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server.
   # This field is ignored if customCA is set.
   # (env: `CT_CA_BUNDLE_FILE`)
@@ -283,4 +295,3 @@ serviceMonitor:
 # customCA: {}
 #   secretName: ca-bundle
 #   subPath: ca.crt
-

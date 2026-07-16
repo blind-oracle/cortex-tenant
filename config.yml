@@ -4,8 +4,12 @@ listen_metrics_address: 0.0.0.0:9090
 metrics_include_tenant: true
 
 target: http://127.0.0.1:9091/receive
+target_otlp: http://127.0.0.1:9009/otlp/v1/metrics
+target_traces: http://127.0.0.1:4318/v1/traces
+otlp_egress_gzip: false
 enable_ipv6: false
 max_conns_per_host: 64
+max_request_body_size: 8388608
 
 auth:
   egress:

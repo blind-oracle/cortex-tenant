@@ -18,19 +18,23 @@ type config struct {
 	ListenMetricsAddress string `yaml:"listen_metrics_address" env:"CT_LISTEN_METRICS_ADDRESS"`
 	MetricsIncludeTenant bool   `yaml:"metrics_include_tenant" env:"CT_METRICS_INCLUDE_TENANT"`
 
-	Target     string `env:"CT_TARGET"`
-	TargetLoki string `yaml:"target_loki" env:"CT_TARGET_LOKI"`
-	EnableIPv6 bool   `yaml:"enable_ipv6" env:"CT_ENABLE_IPV6"`
+	Target         string `env:"CT_TARGET"`
+	TargetLoki     string `yaml:"target_loki" env:"CT_TARGET_LOKI"`
+	TargetOTLP     string `yaml:"target_otlp" env:"CT_TARGET_OTLP"`
+	TargetTraces   string `yaml:"target_traces" env:"CT_TARGET_TRACES"`
+	OTLPEgressGzip bool   `yaml:"otlp_egress_gzip" env:"CT_OTLP_EGRESS_GZIP"`
+	EnableIPv6     bool   `yaml:"enable_ipv6" env:"CT_ENABLE_IPV6"`
 
-	LogLevel          string        `yaml:"log_level" env:"CT_LOG_LEVEL"`
-	Timeout           time.Duration `env:"CT_TIMEOUT"`
-	IdleTimeout       time.Duration `yaml:"idle_timeout" env:"CT_IDLE_TIMEOUT"`
-	TimeoutShutdown   time.Duration `yaml:"timeout_shutdown" env:"CT_TIMEOUT_SHUTDOWN"`
-	Concurrency       int           `env:"CT_CONCURRENCY"`
-	Metadata          bool          `env:"CT_METADATA"`
-	LogResponseErrors bool          `yaml:"log_response_errors" env:"CT_LOG_RESPONSE_ERRORS"`
-	MaxConnDuration   time.Duration `yaml:"max_connection_duration" env:"CT_MAX_CONN_DURATION"`
-	MaxConnsPerHost   int           `env:"CT_MAX_CONNS_PER_HOST" yaml:"max_conns_per_host"`
+	LogLevel           string        `yaml:"log_level" env:"CT_LOG_LEVEL"`
+	Timeout            time.Duration `env:"CT_TIMEOUT"`
+	IdleTimeout        time.Duration `yaml:"idle_timeout" env:"CT_IDLE_TIMEOUT"`
+	TimeoutShutdown    time.Duration `yaml:"timeout_shutdown" env:"CT_TIMEOUT_SHUTDOWN"`
+	Concurrency        int           `env:"CT_CONCURRENCY"`
+	Metadata           bool          `env:"CT_METADATA"`
+	LogResponseErrors  bool          `yaml:"log_response_errors" env:"CT_LOG_RESPONSE_ERRORS"`
+	MaxConnDuration    time.Duration `yaml:"max_connection_duration" env:"CT_MAX_CONN_DURATION"`
+	MaxConnsPerHost    int           `env:"CT_MAX_CONNS_PER_HOST" yaml:"max_conns_per_host"`
+	MaxRequestBodySize int           `yaml:"max_request_body_size" env:"CT_MAX_REQUEST_BODY_SIZE"`
 
 	Auth struct {
 		Egress struct {
@@ -101,6 +105,14 @@ func configLoad(file string) (*config, error) {
 		cfg.TargetLoki = "127.0.0.1:3100"
 	}
 
+	if cfg.TargetOTLP == "" {
+		cfg.TargetOTLP = "http://127.0.0.1:9009/otlp/v1/metrics"
+	}
+
+	if cfg.TargetTraces == "" {
+		cfg.TargetTraces = "http://127.0.0.1:4318/v1/traces"
+	}
+
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 10 * time.Second
 	}
@@ -137,6 +149,10 @@ func configLoad(file string) (*config, error) {
 
 	if cfg.MaxConnsPerHost == 0 {
 		cfg.MaxConnsPerHost = 64
+	}
+
+	if cfg.MaxRequestBodySize == 0 {
+		cfg.MaxRequestBodySize = 8 * 1024 * 1024
 	}
 
 	return cfg, nil

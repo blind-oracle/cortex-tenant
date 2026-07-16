@@ -173,6 +173,24 @@
           "description": "Where to send the modified requests (Cortex)",
           "format": "uri"
         },
+        "target_otlp": {
+          "type": "string",
+          "title": "OTLP Metrics Target URL",
+          "description": "Where to send the modified OTLP/HTTP metrics requests",
+          "format": "uri"
+        },
+        "target_traces": {
+          "type": "string",
+          "title": "OTLP Traces Target URL",
+          "description": "Where to send the modified OTLP/HTTP traces requests",
+          "format": "uri"
+        },
+        "otlp_egress_gzip": {
+          "type": "boolean",
+          "title": "OTLP Egress Gzip",
+          "description": "Whether to gzip-compress OTLP/HTTP egress requests",
+          "default": false
+        },
         "enable_ipv6": {
           "type": "boolean",
           "title": "Enable IPv6",
@@ -234,6 +252,12 @@
           "title": "Max Connection per host",
           "description": "Maximum number of outgoing concurrent connections to Cortex / Mimir",
           "default": 64
+        },
+        "max_request_body_size": {
+          "type": "integer",
+          "title": "Max Request Body Size",
+          "description": "Maximum size in bytes of an incoming request body",
+          "default": 8388608
         },
         "ca_bundle_file": {
           "type": [

@@ -9,6 +9,9 @@ data:
     listen: {{ .Values.config.listen }}
     listen_pprof: {{ .Values.config.listen_pprof }}
     target: {{ .Values.config.target }}
+    target_otlp: {{ .Values.config.target_otlp }}
+    target_traces: {{ .Values.config.target_traces }}
+    otlp_egress_gzip: {{ .Values.config.otlp_egress_gzip }}
     enable_ipv6: {{ .Values.config.enable_ipv6 }}
     log_level: {{ .Values.config.log_level }}
     timeout: {{ .Values.config.timeout }}
@@ -18,6 +21,7 @@ data:
     log_response_errors: {{ .Values.config.log_response_errors }}
     max_connection_duration: {{ .Values.config.max_connection_duration }}
     max_conns_per_host: {{ .Values.config.max_conns_per_host }}
+    max_request_body_size: {{ .Values.config.max_request_body_size | int }}
     auth:
       egress:
         tls_config:

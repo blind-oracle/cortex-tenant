@@ -61,7 +61,7 @@ func main() {
 		log.Fatalf("Unable to start: %s", err)
 	}
 
-	log.Warnf("Listening on %s, sending to %s and %s", cfg.Listen, cfg.Target, cfg.TargetLoki)
+	log.Warnf("Listening on %s, sending to %s, %s, %s and %s", cfg.Listen, cfg.Target, cfg.TargetLoki, cfg.TargetOTLP, cfg.TargetTraces)
 	log.Warnf("Started v%s", Version)
 
 	ch := make(chan os.Signal, 1)
