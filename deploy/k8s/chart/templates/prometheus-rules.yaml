@@ -3,8 +3,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: {{ include "promtail.fullname" . }}
-  {{- with .Values.serviceMonitor.prometheusRule.namespace }}
-  namespace: {{ . | quote }}
+  {{- if .Values.serviceMonitor.prometheusRule.namespace }}
+  namespace: {{ .Values.serviceMonitor.prometheusRule.namespace | quote }}
+  {{- else }}
+  namespace: {{ .Release.Namespace | quote }}
   {{- end }}
   labels:
     {{- include "cortex-tenant.labels" . | nindent 4 }}
