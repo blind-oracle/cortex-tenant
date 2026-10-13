@@ -141,7 +141,7 @@ func Test_handle_logs(t *testing.T) {
 	cfg.pipeOut = fhu.NewInmemoryListener()
 	cfg.Tenant.LabelRemove = true
 
-	p := newProcessor(*cfg)
+	p, _ := newProcessor(*cfg)
 	err = p.run()
 	assert.Nil(t, err)
 
@@ -282,7 +282,7 @@ func Test_processStream(t *testing.T) {
 	cfg, err := getConfig(testLokiConfig)
 	assert.Nil(t, err)
 
-	p := newProcessor(*cfg)
+	p, _ := newProcessor(*cfg)
 
 	ten, err := p.processStream(&testStream3)
 	assert.Nil(t, err)
@@ -293,7 +293,7 @@ func Test_processStream(t *testing.T) {
 	assert.Equal(t, "default", ten)
 
 	cfg.Tenant.Default = ""
-	p = newProcessor(*cfg)
+	p, _ = newProcessor(*cfg)
 	assert.Nil(t, err)
 
 	_, err = p.processStream(&testStream2)

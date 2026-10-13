@@ -1,0 +1,379 @@
+package main
+
+import (
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/base64"
+	"encoding/pem"
+	"io"
+	"net"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	fh "github.com/valyala/fasthttp"
+	fhu "github.com/valyala/fasthttp/fasthttputil"
+)
+
+// Gets a random UUID for testing.
+//
+// Fails the test immediately if the UUID fails to generate.
+func getUUID(t *testing.T) uuid.UUID {
+	id, err := uuid.NewRandom()
+	require.NoError(t, err)
+
+	return id
+}
+
+// Gets a net.Addr for testing.
+func getClientIP() net.Addr {
+	return &net.IPAddr{
+		IP: net.IPv4(10, 10, 10, 1),
+	}
+}
+
+// An empty body callback function
+//
+// Used to allow us to call send() even though we do not care about the body
+// contents at all.
+func emptyBodyFunc() ([]byte, error) {
+	return nil, nil
+}
+
+// Runs a config test
+//
+// cfgSetup is an optional callback to allow calling tests to configure the
+// config struct to their needs.
+//
+// handler is the mock callback handler for the upstream server. Most assertions
+// are expected to happen in this.
+func runConfigTest(t *testing.T, cfgSetup func(*config), handler fh.RequestHandler) {
+	cfg := config{}
+	cfg.Tenant.Header = "X-Scope-OrgID"
+	cfg.Timeout = 10 * time.Second
+	cfg.pipeOut = fhu.NewInmemoryListener()
+
+	if cfgSetup != nil {
+		cfgSetup(&cfg)
+	}
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	s := &fh.Server{
+		Handler: func(ctx *fh.RequestCtx) {
+			handler(ctx)
+
+			// Always return something to ensure p.send doesn't timeout
+			ctx.WriteString("ok")
+		},
+	}
+
+	go s.Serve(cfg.pipeOut)
+
+	result := p.send("http://test/push", getClientIP(), getUUID(t), "", emptyBodyFunc)
+	require.NoError(t, result.err)
+}
+
+// Tests that when username is not set, no auth header is sent
+func Test_NoAuthHeader(t *testing.T) {
+	runConfigTest(
+		t,
+		func(cfg *config) {
+			// Not strictly needed as this is the default, but be explict for this
+			// test that the username needs to be blank.
+			cfg.Auth.Egress.Username = ""
+		},
+		func(ctx *fh.RequestCtx) {
+			auth := ctx.Request.Header.Peek("Authorization")
+			assert.Nil(t, auth, "No Authorization Header should have been set")
+		},
+	)
+}
+
+// Tests that when a username and password are set, an auth header containing these
+// is sent
+func Test_AuthHeader(t *testing.T) {
+	username := "foo"
+	password := "bar"
+
+	runConfigTest(
+		t,
+		func(cfg *config) {
+			cfg.Auth.Egress.Username = username
+			cfg.Auth.Egress.Password = password
+		},
+		func(ctx *fh.RequestCtx) {
+			auth := ctx.Request.Header.Peek("Authorization")
+			if !assert.NotNil(t, auth, "Authorization Header was not set") {
+				return
+			}
+
+			authContent, isBasic := strings.CutPrefix(string(auth), "Basic ")
+			if !assert.True(t, isBasic, "Authorization Header was not of Basic type") {
+				return
+			}
+
+			decodedContent, err := base64.StdEncoding.DecodeString(strings.Trim(authContent, " "))
+			if !assert.NoError(t, err, "Authorization Header did not contain valid base64") {
+				return
+			}
+
+			user, pass, isUserPassPair := strings.Cut(string(decodedContent), ":")
+			if !assert.True(t, isUserPassPair, "Authorization Header did not container username:password pair") {
+				return
+			}
+
+			assert.Equal(t, username, user, "Authorization Header Username is not correct")
+			assert.Equal(t, password, pass, "Authorization Header Password is not correct")
+		},
+	)
+}
+
+// Tests that if you set a CA Bundle File which doesn't exist, newProcessor appropriately
+// fails with an error
+func Test_CABundleFileFail(t *testing.T) {
+	cfg := config{}
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = "file_does_not_exist.crt"
+
+	_, err := newProcessor(cfg)
+	require.Error(t, err)
+}
+
+// Signs the given certificate after adding some sensible required
+// values
+func signCert(t *testing.T, cert, parent *x509.Certificate, pubKey, caPriv any) []byte {
+	cert.NotBefore = time.Now().UTC()
+	cert.NotAfter = time.Now().Add(5 * time.Minute).UTC()
+	cert.BasicConstraintsValid = true
+
+	signed, err := x509.CreateCertificate(rand.Reader, cert, parent, pubKey, caPriv)
+	require.NoError(t, err)
+
+	return signed
+}
+
+// Generates a private key pair for testing
+func makePrivateKey(t *testing.T) (any, any) {
+	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	return pubKey, privateKey
+}
+
+// Generates a self signed CA for testing
+func generateCA(t *testing.T, cn string) ([]byte, any) {
+	cert := x509.Certificate{
+		Subject: pkix.Name{
+			CommonName: cn,
+		},
+		IsCA: true,
+	}
+	pubKey, privateKey := makePrivateKey(t)
+
+	return signCert(t, &cert, &cert, pubKey, privateKey), privateKey
+}
+
+// Generates a self signed CA and writes it to the given writer
+//
+// It returns the string representation of the subject
+func generateAndWriteCA(t *testing.T, w io.Writer, cn string) string {
+	signed, _ := generateCA(t, cn)
+
+	require.NoError(t, pem.Encode(w, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: signed,
+	}))
+
+	return "CN=" + cn
+}
+
+// Tests that when a CA Bundle file is given its certs are loaded into the client
+// used by the processor
+func Test_CABundleFile(t *testing.T) {
+	t.Cleanup(func() {
+		os.Remove("/tmp/test_ca.crt")
+	})
+
+	cfg := config{}
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = "/tmp/test_ca.crt"
+
+	f, err := os.Create("/tmp/test_ca.crt")
+	require.NoError(t, err)
+
+	generatedSubjects := []string{
+		generateAndWriteCA(t, f, "Test 1"),
+		generateAndWriteCA(t, f, "Test 2"),
+	}
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	pool := p.cli.TLSConfig.RootCAs
+	require.NotNil(t, pool)
+
+	foundSubjects := pool.Subjects()
+	require.Len(t, foundSubjects, len(generatedSubjects))
+
+	for i, foundSubject := range foundSubjects {
+		// CertPool.Subjects() returns the encoded byte slice subjects.
+		// We need to decode them to meaningfully compare they are correct.
+		rdnSeq := pkix.RDNSequence{}
+		asn1.Unmarshal(foundSubject, &rdnSeq)
+
+		require.Equal(t, generatedSubjects[i], rdnSeq.String())
+	}
+}
+
+// Tests that when no CA Bundle file is given in the config, no attempt to load it
+// is made.
+func Test_NoCABundleFile(t *testing.T) {
+	cfg := config{}
+
+	// Not strictly required as this is the default, but be explict this is what
+	// we are testing
+	cfg.Auth.Egress.TlsConfig.CaBundleFile = ""
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	// Empty RootCAs means the TLSConfig will fall back to using system trust
+	// certs, as desired.
+	require.Nil(t, p.cli.TLSConfig.RootCAs)
+}
+
+// Runs the processor, requiring that it succeeds, and registering a cleanup
+// function to shut it down again after the test.
+func runProcessor(t *testing.T, p *processor) {
+	require.NoError(t, p.run())
+	t.Cleanup(func() {
+		p.close()
+	})
+}
+
+// Tests that when no CertFile / KeyFile are specified, the server listens
+// in plain HTTP
+func Test_NoTls(t *testing.T) {
+	cfg := config{}
+	cfg.pipeIn = fhu.NewInmemoryListener()
+
+	cfg.Auth.Ingress.TlsConfig.CertFile = ""
+	cfg.Auth.Ingress.TlsConfig.KeyFile = ""
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	c := &fh.Client{
+		Dial: func(_ string) (net.Conn, error) {
+			return cfg.pipeIn.Dial()
+		},
+	}
+
+	runProcessor(t, p)
+
+	req := fh.AcquireRequest()
+
+	// Expect this to be accessible over HTTP (no TLS)
+	req.SetRequestURI("http://test/alive")
+	require.NoError(t, c.Do(req, nil))
+
+	// Expect this to be inaccessible over HTTPS (no TLS)
+	req.SetRequestURI("https://test/alive")
+	require.Error(t, c.Do(req, nil))
+}
+
+// Makes and write a PEM block to a given file
+func makeAndWrite(t *testing.T, name, pemType string, content []byte) {
+	f, err := os.Create(name)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		os.Remove(name)
+	})
+
+	require.NoError(t, pem.Encode(f, &pem.Block{
+		Type:  pemType,
+		Bytes: content,
+	}))
+	f.Close()
+}
+
+// Creates a cert and key for the "test" service, signed by the given CA
+func makeCertKeyPair(t *testing.T, ca *x509.Certificate, caPriv any) {
+	cert := x509.Certificate{
+		Subject: pkix.Name{
+			CommonName: "test",
+		},
+		DNSNames: []string{"test"},
+	}
+	pubKey, privateKey := makePrivateKey(t)
+
+	makeAndWrite(t,
+		"/tmp/tls.crt",
+		"CERTIFICATE",
+		signCert(t, &cert, ca, pubKey, caPriv),
+	)
+
+	marshalledKey, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	require.NoError(t, err)
+	makeAndWrite(t, "/tmp/tls.key", "PRIVATE KEY", marshalledKey)
+}
+
+// Tests that when CertFile / KeyFile are specified, the server listens
+// using TLS
+func Test_Tls(t *testing.T) {
+	signed, privateKey := generateCA(t, "Test CA")
+
+	ca, err := x509.ParseCertificate(signed)
+	require.NoError(t, err)
+
+	makeCertKeyPair(t, ca, privateKey)
+
+	cfg := config{}
+	cfg.Auth.Ingress.TlsConfig.CertFile = "/tmp/tls.crt"
+	cfg.Auth.Ingress.TlsConfig.KeyFile = "/tmp/tls.key"
+	cfg.pipeIn = fhu.NewInmemoryListener()
+
+	p, err := newProcessor(cfg)
+	require.NoError(t, err)
+
+	c := &fh.Client{
+		Dial: func(_ string) (net.Conn, error) {
+			return cfg.pipeIn.Dial()
+		},
+		TLSConfig: &tls.Config{
+			RootCAs: x509.NewCertPool(),
+		},
+	}
+	c.TLSConfig.RootCAs.AddCert(ca)
+
+	runProcessor(t, p)
+
+	req := fh.AcquireRequest()
+
+	// Expect this to be inaccessible over HTTP (because it is TLS)
+	req.SetRequestURI("http://test/alive")
+	require.Error(t, c.Do(req, nil))
+
+	// Expect this to be accessible over HTTPS (because it is TLS)
+	req.SetRequestURI("https://test/alive")
+	require.NoError(t, c.Do(req, nil))
+}
+
+func Test_TlsFail(t *testing.T) {
+	cfg := config{}
+	cfg.Auth.Ingress.TlsConfig.CertFile = "file_does_not_exist.crt"
+	cfg.Auth.Ingress.TlsConfig.KeyFile = "file_does_not_exist.key"
+
+	_, err := newProcessor(cfg)
+	require.Error(t, err)
+}

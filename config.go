@@ -34,8 +34,17 @@ type config struct {
 
 	Auth struct {
 		Egress struct {
-			Username string `env:"CT_AUTH_EGRESS_USERNAME"`
-			Password string `env:"CT_AUTH_EGRESS_PASSWORD"`
+			Username  string `env:"CT_AUTH_EGRESS_USERNAME"`
+			Password  string `env:"CT_AUTH_EGRESS_PASSWORD"`
+			TlsConfig struct {
+				CaBundleFile string `yaml:"ca_bundle_file" env:"CT_CA_BUNDLE_FILE"`
+			} `yaml:"tls_config"`
+		}
+		Ingress struct {
+			TlsConfig struct {
+				CertFile string `yaml:"cert_file" env:"CT_TLS_CERT_FILE"`
+				KeyFile  string `yaml:"key_file" env:"CT_TLS_KEY_FILE"`
+			} `yaml:"tls_config"`
 		}
 	}
 

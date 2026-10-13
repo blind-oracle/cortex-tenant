@@ -193,19 +193,19 @@
           "type": "string",
           "title": "Timeout",
           "description": "HTTP request timeout",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "idle_timeout": {
           "type": "string",
           "title": "Idle_Timeout",
           "description": "HTTP request idle timeout",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "timeout_shutdown": {
           "type": "string",
           "title": "Shutdown timeout",
           "description": "Timeout to wait on shutdown to allow load balancers detect that we're going away",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "concurrency": {
           "type": "integer",
@@ -227,13 +227,50 @@
           "type": "string",
           "title": "Max Connection Duration",
           "description": "Maximum duration to keep outgoing connections alive (to Cortex/Mimir)",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "max_conns_per_host": {
           "type": "integer",
           "title": "Max Connection per host",
           "description": "Maximum number of outgoing concurrent connections to Cortex / Mimir",
           "default": 64
+        },
+        "ca_bundle_file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "CA Bundle File",
+          "description": "If set, this file is loaded as the CA Bundle for verifying TLS certificates sent by the upstream server"
+        },
+        "tls": {
+          "type": "object",
+          "title": "TLS Configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled",
+              "description": "If true the service will accept TLS traffic. Otherwise plain HTTP."
+            },
+            "cert_file": {
+              "type": "string",
+              "title": "TLS Certificate Path",
+              "description": "The path to the certificate file within the container"
+            },
+            "key_file": {
+              "type": "string",
+              "title": "TLS Key Path",
+              "description": "The path to the private key file within the container"
+            },
+            "existingSecret": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Existing Secret",
+              "description": "Secret should be of type kubernetes.io/tls with tls.key and tls.crt entries"
+            }
+          }
         },
         "auth": {
           "type": "object",
@@ -497,7 +534,7 @@
           ],
           "title": "Interval",
           "description": "ServiceMonitor scrape interval",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "scrapeTimeout": {
           "type": [
@@ -506,7 +543,7 @@
           ],
           "title": "Scrape Timeout",
           "description": "ServiceMonitor scrape timeout in Go duration format (e.g. 15s)",
-          "format": "duration"
+          "pattern": "^[0-9]+[smhd]$"
         },
         "relabelings": {
           "type": "array",
