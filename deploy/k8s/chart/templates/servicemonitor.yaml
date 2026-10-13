@@ -4,8 +4,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "cortex-tenant.fullname" $ }}
-  {{- with .namespace }}
-  namespace: {{ . }}
+  {{- if .namespace }}
+  namespace: {{ .namespace | quote }}
+  {{- else }}
+  namespace: {{ $.Release.Namespace | quote }}
   {{- end }}
   {{- with .annotations }}
   annotations:

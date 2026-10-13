@@ -4,6 +4,7 @@ metadata:
   labels:
     {{- include "cortex-tenant.labels" . | nindent 4 }}
   name: {{ include "cortex-tenant.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
   {{- with .Values.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

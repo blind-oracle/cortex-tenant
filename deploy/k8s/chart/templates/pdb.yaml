@@ -3,6 +3,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "cortex-tenant.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     {{- include "cortex-tenant.labels" . | nindent 4 }}
 spec:
